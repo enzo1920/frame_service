@@ -5,18 +5,12 @@ import (
 	"flag"
 	"log"
 	"os"
+	"../frame"
 )
-
-type Configuration struct {
-	Host  string 
-	Devicename  string
-	Password string
-	Port  int
-}
 
 
 //func config_reader(cfg_file string)([]string){
-func Config_reader(cfg_file string) Configuration {
+func Config_reader(cfg_file string) frame.Configuration {
 
 	c := flag.String("c", cfg_file, "Specify the configuration file.")
 	flag.Parse()
@@ -26,7 +20,7 @@ func Config_reader(cfg_file string) Configuration {
 	}
 	defer file.Close()
 	decoder := json.NewDecoder(file)
-	Config := Configuration{}
+	Config := frame.Configuration{}
 	err = decoder.Decode(&Config)
 	if err != nil {
 		log.Println("can't decode config JSON: ", err)
