@@ -1,13 +1,14 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
+	"bytes"
+	"strconv"
 	"io/ioutil"
 	"net/http"
+	"encoding/json"
 	"./readconfig"
-	"strconv"
+
 )
 
 type User struct {

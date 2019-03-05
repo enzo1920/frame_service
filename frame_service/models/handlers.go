@@ -1,13 +1,12 @@
 package models
 
 import (
-	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
-
+	"database/sql"
+	"encoding/json"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -110,8 +109,6 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 func Signin(w http.ResponseWriter, r *http.Request) {
 
-	bad_method(w, r.Method)
-
 	// Parse and decode the request body into a new `Credentials` instance
 	fmt.Println("Signin is ok!")
 	creds := &Credentials{}
@@ -172,8 +169,6 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 	// Query()["key"] will return an array of items,
 	// we only want the single item.
 	device := string(keys[0])
-
-	fmt.Println("Url Param 'device' is: " + device)
 	rows, err := db.Query("SELECT cmd_name FROM commands as c inner join commands_ex as ce on c.id=ce.cmd_id INNER join devices as d on d.id= ce.device_id INNER join command_status cs on cs.id=ce.status_id WHERE d.device_name =$1", device)
 	if err != nil {
 		log.Fatal(err)
@@ -206,21 +201,3 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 
 }
 
-/*// Глобальный секретный ключ
- var mySigningKey = []byte("framesecretkey")
-
-func GetTokenHandler(w http.ResponseWriter, r *http.Request){
-	 // Создаем новый токен
-	 token := jwt.New(jwt.SigningMethodHS256)
-
-	 // Устанавливаем набор параметров для токена
-	 token.Claims["admin"] = true
-	 token.Claims["name"] = "CASE1"
-	 token.Claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
-
-	 // Подписываем токен нашим секретным ключем
-	 tokenString, _ := token.SignedString(mySigningKey)
-
-	 // Отдаем токен клиенту
-	 w.Write([]byte(tokenString))
- }*/

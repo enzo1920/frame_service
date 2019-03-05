@@ -1,17 +1,12 @@
 package main
 
 import (
+	"os"
 	"fmt"
-
-	"./models"
-	"./readconfig"
-
-	//"database/sql"
-
 	"log"
 	"net/http"
-	"os"
-
+	"./models"
+	"./readconfig"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 )
@@ -57,10 +52,10 @@ func AddV2Routes(r *mux.Router) {
 // AddRoutes takes a router or subrouter and adds all the latest
 // routes to it
 func AddRoutes(r *mux.Router) {
-	r.HandleFunc("/signin", models.Signin)
-	r.HandleFunc("/signup", models.Signup)
+	r.HandleFunc("/signin", models.Signin).Methods("POST")
+	r.HandleFunc("/signup", models.Signup).Methods("POST")
 	r.HandleFunc("/commands/", models.GetCommands).Methods("GET")
-	r.HandleFunc("/getcams", models.Cam_adr_get)
+	r.HandleFunc("/getcams", models.Cam_adr_get).Methods("GET")
 	//r.HandleFunc("/get-token", models.GetTokenHandler).Methods("GET")
 }
 
