@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"strings"
@@ -172,7 +173,9 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 	// Query()["key"] will return an array of items,
 	// we only want the single item.
 	device := string(keys[0])
-	rows, err := db.Query("SELECT cmd_name FROM commands as c inner join commands_ex as ce on c.id=ce.cmd_id INNER join devices as d on d.id= ce.device_id INNER join command_status cs on cs.id=ce.status_id WHERE d.device_name =$1", device)
+	rows, err := db.Query("SELECT cmd_name FROM commands as c inner join commands_ex as ce on c.id=ce.cmd_id"+
+		" INNER join devices as d on d.id= ce.device_id"+
+		" INNER join command_status cs on cs.id=ce.status_id WHERE d.device_name =$1", device)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -206,7 +209,13 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 
 //upload image handler
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	file, err := os.Create("./uploaded/Cotier17.jpeg")
+
+	contentDisposition := r.Header.Get("Content-Disposition")
+	_, params, err := mime.ParseMediaType(contentDisposition)
+	filename := params["filename"] // set to "foo.png"
+	fmt.Println("response file", filename)
+
+	file, err := os.Create("./uploaded/" + filename)
 	if err != nil {
 		panic(err)
 	}
@@ -214,6 +223,5 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-
 	w.Write([]byte(fmt.Sprintf("%d bytes are recieved.\n", n)))
 }
