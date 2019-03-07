@@ -1,12 +1,15 @@
 package models
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-	"strings"
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -201,3 +204,16 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//upload image handler
+func UploadHandler(w http.ResponseWriter, r *http.Request) {
+	file, err := os.Create("./uploaded/Cotier17.jpeg")
+	if err != nil {
+		panic(err)
+	}
+	n, err := io.Copy(file, r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	w.Write([]byte(fmt.Sprintf("%d bytes are recieved.\n", n)))
+}

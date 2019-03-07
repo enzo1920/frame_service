@@ -1,10 +1,11 @@
 package main
 
 import (
-	"os"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+
 	"./models"
 	"./readconfig"
 	"github.com/gorilla/mux"
@@ -56,6 +57,7 @@ func AddRoutes(r *mux.Router) {
 	r.HandleFunc("/signup", models.Signup).Methods("POST")
 	r.HandleFunc("/commands/", models.GetCommands).Methods("GET")
 	r.HandleFunc("/getcams", models.Cam_adr_get).Methods("GET")
+	r.HandleFunc("/upload", models.UploadHandler).Methods("POST")
 	//r.HandleFunc("/get-token", models.GetTokenHandler).Methods("GET")
 }
 

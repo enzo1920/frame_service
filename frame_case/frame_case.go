@@ -1,14 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"bytes"
-	"strconv"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
-	"encoding/json"
-	"./readconfig"
+	"os"
+	"strconv"
 
+	"./readconfig"
 )
 
 type User struct {
@@ -19,8 +20,6 @@ type User struct {
 type Cmd struct {
 	Login string `json:"username"`
 }
-
-
 
 /*
 func login() {
@@ -64,7 +63,7 @@ func GetCommands(cfg readconfig.Configuration) {
 	}
 	fmt.Println(string(jsonStr))
 
-	url := "http://"+cfg.Host+":"+strconv.Itoa(cfg.Port)+"/v1/commands/?device="+cfg.Devicename
+	url := "http://" + cfg.Host + ":" + strconv.Itoa(cfg.Port) + "/v1/commands/?device=" + cfg.Devicename
 	fmt.Println("URL:>", url)
 
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer(jsonStr))
@@ -81,12 +80,32 @@ func GetCommands(cfg readconfig.Configuration) {
 
 	fmt.Println("response Status:", resp.Status)
 	fmt.Println("response Headers:", resp.Header)
+
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	cmds := string(body)
+	fmt.Println("response Body cmds:", string(cmds))
+}
+
+// it's simple upload func let's do it!
+func upload(cfg readconfig.Configuration) {
+	file, err := os.Open("./upload/Cotier17_2017-07-17_13-22-02.jpeg")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	res, err := http.Post("http://"+cfg.Host+":"+strconv.Itoa(cfg.Port)+"/upload", "binary/octet-stream", file)
+	if err != nil {
+		panic(err)
+	}
+	defer res.Body.Close()
+	message, _ := ioutil.ReadAll(res.Body)
+	fmt.Printf(string(message))
 }
 
 func main() {
 	//login()
 	readcfg := readconfig.Config_reader("./readconfig/frame_case.conf")
 	GetCommands(readcfg)
+	upload(readcfg)
 }
