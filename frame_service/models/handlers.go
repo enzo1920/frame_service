@@ -7,10 +7,12 @@ import (
 	"io"
 	"log"
 	"mime"
+	"net"
 	"net/http"
 	"os"
 	"strings"
-
+	"regexp"
+	"path/filepath"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -214,14 +216,73 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	_, params, err := mime.ParseMediaType(contentDisposition)
 	filename := params["filename"] // set to "foo.png"
 	fmt.Println("response file", filename)
+	//log.Println("response file", filename)
+	//get date from filename
+	re := regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
+ 
+    //fmt.Printf("Pattern: %v\n", re.String()) // print pattern
+ 
+    //fmt.Println(re.MatchString(filename)) // true
+    submatchall := re.FindAllString(filename, -1)
+    for _, element := range submatchall {
+		newpath := filepath.Join(".", "uploaded",element)
+        os.MkdirAll(newpath, os.ModePerm)
+        file, err := os.Create(filepath.Join(newpath,filename))
+	    if err != nil {
+		     log.Fatal(err)
+	    }
+	    n, err := io.Copy(file, r.Body)
+	    if err != nil {
+		    log.Fatal(err)
+		}
+		w.Write([]byte(fmt.Sprintf("%d bytes are recieved.\n", n)))
+        //fmt.Println(element)
+    }
 
-	file, err := os.Create("./uploaded/" + filename)
+
+	//work with remote addr
+	ip, port, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		panic(err)
+        //return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
+
+        fmt.Fprintf(w, "userip: %q is not IP:port", r.RemoteAddr)
 	}
-	n, err := io.Copy(file, r.Body)
-	if err != nil {
-		panic(err)
+	userIP := net.ParseIP(ip)
+    if userIP == nil {
+        //return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
+		fmt.Printf("userip: %q is not IP:port \n", r.RemoteAddr)
+        return
 	}
-	w.Write([]byte(fmt.Sprintf("%d bytes are recieved.\n", n)))
+	fmt.Printf(" Client whith IP:%s, Port:%s load file:%s \n", string(ip), string(port), filename)
+    //fmt.Println("Port:", port)
+
+	
 }
+/*
+//get client ip
+func GetIP(w http.ResponseWriter, req *http.Request){
+    fmt.Fprintf(w, "<h1>static file server</h1><p><a href='./uploaded'>folder</p></a>")
+
+    ip, port, err := net.SplitHostPort(req.RemoteAddr)
+    if err != nil {
+        //return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
+
+        fmt.Fprintf(w, "userip: %q is not IP:port", req.RemoteAddr)
+    }
+
+    userIP := net.ParseIP(ip)
+    if userIP == nil {
+        //return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
+        fmt.Fprintf(w, "userip: %q is not IP:port", req.RemoteAddr)
+        return
+    }
+
+    // This will only be defined when site is accessed via non-anonymous proxy
+    // and takes precedence over RemoteAddr
+    // Header.Get is case-insensitive
+    forward := req.Header.Get("X-Forwarded-For")
+    fmt.Fprintf(w, "<p>IP: %s</p>", ip)
+    fmt.Fprintf(w, "<p>Port: %s</p>", port)
+    fmt.Fprintf(w, "<p>Forwarded for: %s</p>", forward)
+}
+*/

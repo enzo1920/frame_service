@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-
 	"./readconfig"
+	"path/filepath"
 )
 
 type User struct {
@@ -54,17 +54,16 @@ func login() {
 }
 */
 //
-func GetCommands(cfg readconfig.Configuration) {
-	user := &User{Login: cfg.Devicename}
+func GetCommands(serv_url string, dev_name string) {
+	user := &User{Login: dev_name}
 	jsonStr, err := json.Marshal(user)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(string(jsonStr))
+	//fmt.Println(string(jsonStr))
 
-	url := "http://" + cfg.Host + ":" + strconv.Itoa(cfg.Port) + "/v1/commands/?device=" + cfg.Devicename
-	fmt.Println("URL:>", url)
+	url := serv_url + "/v1/commands/?device=" + dev_name
 
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer(jsonStr))
 	req.Header.Set("X-Custom-Header", "myvalue")
@@ -86,57 +85,67 @@ func GetCommands(cfg readconfig.Configuration) {
 	fmt.Println("response Body cmds:", string(cmds))
 }
 
-// it's simple upload func let's do it!
-/*func upload(cfg readconfig.Configuration) {
-	file, err := os.Open("./upload/Cotier17_2017-07-17_13-22-02.jpeg")
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
 
-	res, err := http.Post("http://"+cfg.Host+":"+strconv.Itoa(cfg.Port)+"/upload", "binary/octet-stream", file)
-	res.Header.Add("Content-Disposition", "attachment; filename=Cotier17_2017-07-17_13-22-02.jpeg")
-	if err != nil {
-		panic(err)
-	}
-	defer res.Body.Close()
-	fmt.Println(res)
-	message, _ := ioutil.ReadAll(res.Body)
-	fmt.Printf(string(message))
-}*/
+func upload(serv_url string, filename string) {
 
-func upload(cfg readconfig.Configuration) {
-	file, err := os.Open("./upload/Cotier17_2017-07-17_13-22-02.jpeg")
+	file, err := os.Open("./upload/"+filename)
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
 
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", "http://"+cfg.Host+":"+strconv.Itoa(cfg.Port)+"/upload", file)
+	req, err := http.NewRequest("POST", serv_url+"/upload", file)
 	if err != nil {
 		panic(err)
 	}
-	req.Header.Add("Content-Disposition", "attachment; filename=Cotier17_2017-07-17_13-22-02.jpeg")
+	req.Header.Add("Content-Disposition", "attachment; filename="+filename)
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
-	fmt.Println(resp)
+	fmt.Println(resp.Status)
 
-	/*
-		res, err := http.Post("http://"+cfg.Host+":"+strconv.Itoa(cfg.Port)+"/upload", "binary/octet-stream", file)
-		res.Header.Add("Content-Disposition", "attachment; filename=Cotier17_2017-07-17_13-22-02.jpeg")
-		if err != nil {
-			panic(err)
+}
+
+
+func Getfilesdir()([]string){
+
+	files_to_upload := make([]string, 0)
+	dirname := "./upload" + string(filepath.Separator)
+	d, err := os.Open(dirname)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer d.Close()
+
+	files, err := d.Readdir(-1)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Reading "+ dirname)
+
+	for _, file := range files {
+		if file.Mode().IsRegular() {
+			if filepath.Ext(file.Name()) == ".jpeg" {
+				files_to_upload = append(files_to_upload, file.Name())
+			}
 		}
-		defer res.Body.Close()
-		fmt.Println(res)
-		message, _ := ioutil.ReadAll(res.Body)
-		fmt.Printf(string(message))*/
+	}
+return files_to_upload
 }
 
 func main() {
 	//login()
 	readcfg := readconfig.Config_reader("./readconfig/frame_case.conf")
-	GetCommands(readcfg)
-	upload(readcfg)
+	server_url :="http://"+readcfg.Host+":"+strconv.Itoa(readcfg.Port)
+	device :=readcfg.Devicename
+	GetCommands(server_url, device)
+
+	files := Getfilesdir()
+	for _, filename := range files{
+		fmt.Println("files in dir is:", filename)
+		upload(server_url, filename)
+	}
 }
