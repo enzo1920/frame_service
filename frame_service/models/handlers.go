@@ -17,18 +17,23 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	B  = 1
+	KB = 1024 * B
+	MB = 1024 * KB
+	GB = 1024 * MB
+)
+
 // Create a struct that models the structure of a user, both in the request body, and in the DB
 type Credentials struct {
 	Password string `json:"password", db:"password"`
 	Username string `json:"username", db:"username"`
 }
 
-func bad_method(w http.ResponseWriter, method string) {
-	if method != "POST" {
-		http.Error(w, http.StatusText(405), 405)
-		return
-	}
-
+type DiskStatus struct {
+	All  uint64 `json:"all"`
+	Used uint64 `json:"used"`
+	Free uint64 `json:"free"`
 }
 
 /*
@@ -47,7 +52,7 @@ func HomeRouterHandler(w http.ResponseWriter, r *http.Request) {
 }
 */
 func Cam_adr_get(w http.ResponseWriter, r *http.Request) {
-	bad_method(w, r.Method)
+
 	cam_type := 0
 	rows, err := db.Query("SELECT ip_addr FROM cameras_addr WHERE cmr_type=$1", cam_type)
 	if err != nil {
@@ -81,7 +86,6 @@ func Cam_adr_get(w http.ResponseWriter, r *http.Request) {
 }
 
 func Signup(w http.ResponseWriter, r *http.Request) {
-	bad_method(w, r.Method)
 	// Parse and decode the request body into a new `Credentials` instance
 	fmt.Println("Signup is ok!")
 	creds := &Credentials{}
@@ -257,6 +261,22 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
     //fmt.Println("Port:", port)
 
 	
+}
+
+
+func DiskStateHandler(w http.ResponseWriter, r *http.Request){
+	diskstate := &DiskStatus{}
+	err := json.NewDecoder(r.Body).Decode(diskstate)
+	if err != nil {
+		// If there is something wrong with the request body, return a 400 status
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	fmt.Println(diskstate.All, diskstate.Free, diskstate.Used)
+	fmt.Printf("All: %.2f GB\n", float64(diskstate.All)/float64(GB))
+	fmt.Printf("Used: %.2f GB\n", float64(diskstate.Used)/float64(GB))
+	fmt.Printf("Free: %.2f GB\n", float64(diskstate.Free)/float64(GB))
+
 }
 /*
 //get client ip

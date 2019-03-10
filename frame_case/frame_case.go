@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"syscall"
 	"./readconfig"
 	"path/filepath"
 )
@@ -20,6 +21,19 @@ type User struct {
 type Cmd struct {
 	Login string `json:"username"`
 }
+
+type DiskStatus struct {
+	All  uint64 `json:"all"`
+	Used uint64 `json:"used"`
+	Free uint64 `json:"free"`
+}
+
+const (
+	B  = 1
+	KB = 1024 * B
+	MB = 1024 * KB
+	GB = 1024 * MB
+)
 
 /*
 func login() {
@@ -136,6 +150,50 @@ func Getfilesdir()([]string){
 return files_to_upload
 }
 
+func DiskUsage(serv_url string,path string){
+	fs := syscall.Statfs_t{}
+	err := syscall.Statfs(path, &fs)
+	if err != nil {
+		return
+	}
+	disk := &DiskStatus{}
+	disk.All = fs.Blocks * uint64(fs.Bsize)
+	disk.Free = fs.Bfree * uint64(fs.Bsize)
+	disk.Used = disk.All - disk.Free
+
+	jsonDisk, err := json.Marshal(disk)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("fs_state_ json:", string(jsonDisk))
+
+
+	url := serv_url + "/v1/diskstate"
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonDisk))
+	req.Header.Set("X-Custom-Header", "myvalue")
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("response Status:", resp.Status)
+	fmt.Println("response Headers:", resp.Header)
+
+
+
+	//return
+}
+
+
+
+
 func main() {
 	//login()
 	readcfg := readconfig.Config_reader("./readconfig/frame_case.conf")
@@ -148,4 +206,5 @@ func main() {
 		fmt.Println("files in dir is:", filename)
 		upload(server_url, filename)
 	}
+	DiskUsage(server_url,"/")
 }
