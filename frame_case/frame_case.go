@@ -7,10 +7,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"syscall"
+
 	"./readconfig"
-	"path/filepath"
 )
 
 type User struct {
@@ -23,9 +24,11 @@ type Cmd struct {
 }
 
 type DiskStatus struct {
-	All  uint64 `json:"all"`
-	Used uint64 `json:"used"`
-	Free uint64 `json:"free"`
+	Device    string `json:"device"`
+	Disk_part string `json:"disk_part"`
+	All       uint64 `json:"all"`
+	Used      uint64 `json:"used"`
+	Free      uint64 `json:"free"`
 }
 
 const (
@@ -99,10 +102,9 @@ func GetCommands(serv_url string, dev_name string) {
 	fmt.Println("response Body cmds:", string(cmds))
 }
 
-
 func upload(serv_url string, filename string) {
 
-	file, err := os.Open("./upload/"+filename)
+	file, err := os.Open("./upload/" + filename)
 	if err != nil {
 		panic(err)
 	}
@@ -120,8 +122,7 @@ func upload(serv_url string, filename string) {
 
 }
 
-
-func Getfilesdir()([]string){
+func Getfilesdir() []string {
 
 	files_to_upload := make([]string, 0)
 	dirname := "./upload" + string(filepath.Separator)
@@ -138,7 +139,7 @@ func Getfilesdir()([]string){
 		os.Exit(1)
 	}
 
-	fmt.Println("Reading "+ dirname)
+	fmt.Println("Reading " + dirname)
 
 	for _, file := range files {
 		if file.Mode().IsRegular() {
@@ -147,16 +148,18 @@ func Getfilesdir()([]string){
 			}
 		}
 	}
-return files_to_upload
+	return files_to_upload
 }
 
-func DiskUsage(serv_url string,path string){
+func DiskUsage(serv_url string, device_name string, path string) {
 	fs := syscall.Statfs_t{}
 	err := syscall.Statfs(path, &fs)
 	if err != nil {
 		return
 	}
 	disk := &DiskStatus{}
+	disk.Device = device_name
+	disk.Disk_part = path
 	disk.All = fs.Blocks * uint64(fs.Bsize)
 	disk.Free = fs.Bfree * uint64(fs.Bsize)
 	disk.Used = disk.All - disk.Free
@@ -167,7 +170,6 @@ func DiskUsage(serv_url string,path string){
 		return
 	}
 	fmt.Println("fs_state_ json:", string(jsonDisk))
-
 
 	url := serv_url + "/v1/diskstate"
 
@@ -186,25 +188,20 @@ func DiskUsage(serv_url string,path string){
 	fmt.Println("response Status:", resp.Status)
 	fmt.Println("response Headers:", resp.Header)
 
-
-
 	//return
 }
-
-
-
 
 func main() {
 	//login()
 	readcfg := readconfig.Config_reader("./readconfig/frame_case.conf")
-	server_url :="http://"+readcfg.Host+":"+strconv.Itoa(readcfg.Port)
-	device :=readcfg.Devicename
+	server_url := "http://" + readcfg.Host + ":" + strconv.Itoa(readcfg.Port)
+	device := readcfg.Devicename
 	GetCommands(server_url, device)
 
 	files := Getfilesdir()
-	for _, filename := range files{
+	for _, filename := range files {
 		fmt.Println("files in dir is:", filename)
 		upload(server_url, filename)
 	}
-	DiskUsage(server_url,"/")
+	DiskUsage(server_url, device, "/")
 }

@@ -10,9 +10,11 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strings"
-	"regexp"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -31,9 +33,11 @@ type Credentials struct {
 }
 
 type DiskStatus struct {
-	All  uint64 `json:"all"`
-	Used uint64 `json:"used"`
-	Free uint64 `json:"free"`
+	Device    string `json:"device"`
+	Disk_part string `json:"disk_part"`
+	All       uint64 `json:"all"`
+	Used      uint64 `json:"used"`
+	Free      uint64 `json:"free"`
 }
 
 /*
@@ -51,6 +55,11 @@ func HomeRouterHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello serg!") // отправляем данные на клиентскую сторону
 }
 */
+func FloatToString(input_num float64) string {
+	// to convert a float number to a string
+	return strconv.FormatFloat(input_num, 'f', 6, 64)
+}
+
 func Cam_adr_get(w http.ResponseWriter, r *http.Request) {
 
 	cam_type := 0
@@ -223,48 +232,45 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	//log.Println("response file", filename)
 	//get date from filename
 	re := regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
- 
-    //fmt.Printf("Pattern: %v\n", re.String()) // print pattern
- 
-    //fmt.Println(re.MatchString(filename)) // true
-    submatchall := re.FindAllString(filename, -1)
-    for _, element := range submatchall {
-		newpath := filepath.Join(".", "uploaded",element)
-        os.MkdirAll(newpath, os.ModePerm)
-        file, err := os.Create(filepath.Join(newpath,filename))
-	    if err != nil {
-		     log.Fatal(err)
-	    }
-	    n, err := io.Copy(file, r.Body)
-	    if err != nil {
-		    log.Fatal(err)
+
+	//fmt.Printf("Pattern: %v\n", re.String()) // print pattern
+
+	//fmt.Println(re.MatchString(filename)) // true
+	submatchall := re.FindAllString(filename, -1)
+	for _, element := range submatchall {
+		newpath := filepath.Join(".", "uploaded", element)
+		os.MkdirAll(newpath, os.ModePerm)
+		file, err := os.Create(filepath.Join(newpath, filename))
+		if err != nil {
+			log.Fatal(err)
+		}
+		n, err := io.Copy(file, r.Body)
+		if err != nil {
+			log.Fatal(err)
 		}
 		w.Write([]byte(fmt.Sprintf("%d bytes are recieved.\n", n)))
-        //fmt.Println(element)
-    }
-
+		//fmt.Println(element)
+	}
 
 	//work with remote addr
 	ip, port, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-        //return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
+		//return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
 
-        fmt.Fprintf(w, "userip: %q is not IP:port", r.RemoteAddr)
+		fmt.Fprintf(w, "userip: %q is not IP:port", r.RemoteAddr)
 	}
 	userIP := net.ParseIP(ip)
-    if userIP == nil {
-        //return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
+	if userIP == nil {
+		//return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
 		fmt.Printf("userip: %q is not IP:port \n", r.RemoteAddr)
-        return
+		return
 	}
 	fmt.Printf(" Client whith IP:%s, Port:%s load file:%s \n", string(ip), string(port), filename)
-    //fmt.Println("Port:", port)
+	//fmt.Println("Port:", port)
 
-	
 }
 
-
-func DiskStateHandler(w http.ResponseWriter, r *http.Request){
+func DiskStateHandler(w http.ResponseWriter, r *http.Request) {
 	diskstate := &DiskStatus{}
 	err := json.NewDecoder(r.Body).Decode(diskstate)
 	if err != nil {
@@ -272,12 +278,24 @@ func DiskStateHandler(w http.ResponseWriter, r *http.Request){
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fmt.Println(diskstate.All, diskstate.Free, diskstate.Used)
+	fmt.Printf("Device %s disk_part %s\n", diskstate.Device, diskstate.Disk_part)
 	fmt.Printf("All: %.2f GB\n", float64(diskstate.All)/float64(GB))
 	fmt.Printf("Used: %.2f GB\n", float64(diskstate.Used)/float64(GB))
 	fmt.Printf("Free: %.2f GB\n", float64(diskstate.Free)/float64(GB))
 
+	if _, err = db.Query("insert into  device_disk_state values (DEFAULT,$1,$2,$3,$4,$5, CURRENT_TIMESTAMP)", 11, diskstate.Disk_part,
+		FloatToString(float64(diskstate.All)/float64(GB)),
+		FloatToString(float64(diskstate.Used)/float64(GB)),
+		FloatToString(float64(diskstate.Free)/float64(GB))); err != nil {
+		// If there is any issue with inserting into the database, return a 500 error
+		log.Println(" insert err", err)
+		//w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+
 }
+
 /*
 //get client ip
 func GetIP(w http.ResponseWriter, req *http.Request){
