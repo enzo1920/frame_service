@@ -226,16 +226,13 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	contentDisposition := r.Header.Get("Content-Disposition")
+    devicename := r.Header.Get("X-Custom-Header")// get devname from custom header
+	fmt.Printf("Custom header is: %s\n", devicename)
 	_, params, err := mime.ParseMediaType(contentDisposition)
-	filename := params["filename"] // set to "foo.png"
+	filename := params["filename"] // get filename from header
 	fmt.Println("response file", filename)
-	//log.Println("response file", filename)
 	//get date from filename
 	re := regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
-
-	//fmt.Printf("Pattern: %v\n", re.String()) // print pattern
-
-	//fmt.Println(re.MatchString(filename)) // true
 	submatchall := re.FindAllString(filename, -1)
 	for _, element := range submatchall {
 		newpath := filepath.Join(".", "uploaded", element)
@@ -252,21 +249,36 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		//fmt.Println(element)
 	}
 
+	//get dev_id from db
+	device_id := 0
+	err = db.QueryRow("select id from devices where device_name=$1", devicename).Scan(&device_id)
+	if err != nil {
+		// If there is an issue with the database, return a 500 error
+		fmt.Println("--->", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	fmt.Println("id is:", device_id)
+	fmt.Println("select dev_id is ok!")
 	//work with remote addr
 	ip, port, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		//return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
 
-		fmt.Fprintf(w, "userip: %q is not IP:port", r.RemoteAddr)
+		log.Println("userip: %q is not IP:port", r.RemoteAddr)
 	}
 	userIP := net.ParseIP(ip)
 	if userIP == nil {
 		//return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
-		fmt.Printf("userip: %q is not IP:port \n", r.RemoteAddr)
+		log.Println("userip: %q is not IP:port \n", r.RemoteAddr)
 		return
 	}
-	fmt.Printf(" Client whith IP:%s, Port:%s load file:%s \n", string(ip), string(port), filename)
-	//fmt.Println("Port:", port)
+    if _, err = db.Query("insert into  dev_upload_log values (DEFAULT,$1,$2,$3,$4, CURRENT_TIMESTAMP)", device_id, string(ip), port,filename ); err != nil {
+		// If there is any issue with inserting into the database, return a 500 error
+		log.Println(" insert dev_upload_log err", err)
+		//w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 }
 

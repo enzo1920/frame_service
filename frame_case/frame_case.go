@@ -102,7 +102,7 @@ func GetCommands(serv_url string, dev_name string) {
 	fmt.Println("response Body cmds:", string(cmds))
 }
 
-func upload(serv_url string, filename string) {
+func UploadImage(serv_url string, dev_name string, filename string) {
 
 	file, err := os.Open("./upload/" + filename)
 	if err != nil {
@@ -115,6 +115,7 @@ func upload(serv_url string, filename string) {
 	if err != nil {
 		panic(err)
 	}
+	req.Header.Add("X-Custom-Header", dev_name)
 	req.Header.Add("Content-Disposition", "attachment; filename="+filename)
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
@@ -128,15 +129,13 @@ func Getfilesdir() []string {
 	dirname := "./upload" + string(filepath.Separator)
 	d, err := os.Open(dirname)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		panic(err)
 	}
 	defer d.Close()
 
 	files, err := d.Readdir(-1)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		panic(err)
 	}
 
 	fmt.Println("Reading " + dirname)
@@ -201,7 +200,7 @@ func main() {
 	files := Getfilesdir()
 	for _, filename := range files {
 		fmt.Println("files in dir is:", filename)
-		upload(server_url, filename)
+		UploadImage(server_url, device, filename)
 	}
 	DiskUsage(server_url, device, "/")
 }
