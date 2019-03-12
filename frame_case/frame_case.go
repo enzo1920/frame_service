@@ -115,7 +115,7 @@ func UploadImage(serv_url string, dev_name string, filename string) {
 	if err != nil {
 		panic(err)
 	}
-	req.Header.Add("X-Custom-Header", dev_name)
+	req.Header.Add("Content-Disposition", "form-data; name="+dev_name)
 	req.Header.Add("Content-Disposition", "attachment; filename="+filename)
 	resp, err := client.Do(req)
 	defer resp.Body.Close()

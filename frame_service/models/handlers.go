@@ -226,10 +226,12 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	contentDisposition := r.Header.Get("Content-Disposition")
-    devicename := r.Header.Get("X-Custom-Header")// get devname from custom header
-	fmt.Printf("Custom header is: %s\n", devicename)
+    //devicename := r.Header.Get("X-Custom-Header")// get devname from custom header
+	//fmt.Printf("Custom header is: %s\n", devicename)
 	_, params, err := mime.ParseMediaType(contentDisposition)
 	filename := params["filename"] // get filename from header
+	devicename := params["name"]
+	fmt.Printf(" header is: %s\n", devicename)
 	fmt.Println("response file", filename)
 	//get date from filename
 	re := regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
