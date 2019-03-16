@@ -9,8 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
-
+	"./utils"
 	"./readconfig"
 )
 
@@ -29,6 +30,12 @@ type DiskStatus struct {
 	All       uint64 `json:"all"`
 	Used      uint64 `json:"used"`
 	Free      uint64 `json:"free"`
+}
+
+type Ip_stream struct {
+	Ip []string 
+	Type string
+	Stream string
 }
 
 const (
@@ -190,11 +197,16 @@ func DiskUsage(serv_url string, device_name string, path string) {
 	//return
 }
 
+
+
+
+
 func main() {
 	//login()
+	fmt.Println("max parallelism is:", utils.MaxParallelism())
 	readcfg := readconfig.Config_reader("./readconfig/frame_case.conf")
-	server_url := "http://" + readcfg.Host + ":" + strconv.Itoa(readcfg.Port)
-	device := readcfg.Devicename
+	server_url := "http://" + readcfg.Connection.Host + ":" + strconv.Itoa(readcfg.Connection.Port)
+	device := readcfg.Connection.Devicename
 	GetCommands(server_url, device)
 
 	files := Getfilesdir()
@@ -203,4 +215,38 @@ func main() {
 		UploadImage(server_url, device, filename)
 	}
 	DiskUsage(server_url, device, "/")
+
+	dictionary := map[int]*Ip_stream{}
+	for _,i := range readcfg.Cameras_block.Cameras_stream{
+		ipStream := Ip_stream{ 
+			Stream:i.Stream}
+		dictionary[i.Cameras_type] = &ipStream
+	}
+	for _, i := range readcfg.Cameras_block.Cameras_type{
+		obj := dictionary[i.Type]
+		obj.Type = i.Value
+	}
+
+	for _, i := range readcfg.Cameras_block.Cameras_address{
+		obj := dictionary[i.Type]
+		//fmt.Println("---->", i.Value)
+		obj.Ip  = append(obj.Ip,i.Value)
+	}
+
+	//for i, x := range dictionary{
+	//	fmt.Print(i, " -> " ,x)
+	//	fmt.Println()
+		
+	//}
+	for _, x:= range dictionary{
+		for _, ip:= range x.Ip{
+			stream :=strings.Replace(x.Stream, "{ip}", ip, 1)
+			stream =strings.Replace(stream, "{port}", "554", 1)
+			fmt.Println(stream)
+		}
+
+	}
+
+
+
 }
