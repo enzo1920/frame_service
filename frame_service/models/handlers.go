@@ -231,8 +231,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	_, params, err := mime.ParseMediaType(contentDisposition)
 	filename := params["filename"] // get filename from header
 	devicename := params["name"]
-	fmt.Printf(" header is: %s\n", devicename)
-	fmt.Println("response file", filename)
+	fmt.Printf("header is: %s\n", devicename)
+	fmt.Printf("response file %s\n", filename)
 	//get date from filename
 	re := regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
 	submatchall := re.FindAllString(filename, -1)
@@ -248,7 +248,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 		w.Write([]byte(fmt.Sprintf("%d bytes are recieved.\n", n)))
-		//fmt.Println(element)
+		fmt.Println(element)
 	}
 
 	//get dev_id from db
