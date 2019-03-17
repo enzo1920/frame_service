@@ -1,18 +1,22 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sync"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
+	"os/exec"
 	"./utils"
 	"./readconfig"
+	"bytes"
+	"time"
+	"path"
 )
 
 type User struct {
@@ -111,10 +115,11 @@ func GetCommands(serv_url string, dev_name string) {
 
 func UploadImage(serv_url string, dev_name string, filename string) {
 
-	file, err := os.Open("./upload/" + filename)
+	file, err := os.Open(path.Join("./upload/", filename))
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("open file to send:",filename)
 	defer file.Close()
 
 	client := &http.Client{}
@@ -122,18 +127,77 @@ func UploadImage(serv_url string, dev_name string, filename string) {
 	if err != nil {
 		panic(err)
 	}
-	req.Header.Add("Content-Disposition", "form-data; name="+dev_name)
-	req.Header.Add("Content-Disposition", "attachment; filename="+filename)
+	req.Header.Add("Content-Disposition", "form-data; name="+dev_name+"; filename="+filename)
+	//req.Header.Add("Content-Disposition", "attachment; filename="+filename)
+	//req.Header.Add("Content-Disposition", "form-data; name="+dev_name)
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
 	fmt.Println(resp.Status)
 
 }
 
+// func for formating rtsp-stream from config
+func FormatCommands(cfg readconfig.Configuration) []string{
+	
+	t := time.Now().Format("2006-01-02_15-04-05")
+	commands_capture:= make([]string, 0)
+    
+	dictionary := map[int]*Ip_stream{}
+	for _,i := range cfg.Cameras_block.Cameras_stream{
+		ipStream := Ip_stream{ 
+			Stream:i.Stream}
+		dictionary[i.Cameras_type] = &ipStream
+	}
+	for _, i := range cfg.Cameras_block.Cameras_type{
+		obj := dictionary[i.Type]
+		obj.Type = i.Value
+	}
+
+
+	for _, i := range cfg.Cameras_block.Cameras_address{
+		obj := dictionary[i.Type]
+		obj.Ip  = append(obj.Ip,i.Value)
+	}
+
+
+	for _, x:= range dictionary{
+		//fmt.Println(x)
+		for _, ip:= range x.Ip{
+			sa := strings.Split(ip, ".")
+			//get addr last byte of ip
+			camera_name :=strings.Title(x.Type)+sa[3]
+			//fmt.Println(camera_name)
+			stream :=strings.Replace(x.Stream, "{ip}", ip, 1)
+			stream =strings.Replace(stream, "{port}", "554", 1)
+			stream = stream +" ./upload/"+ camera_name+"_"+t+".jpeg"
+			//fmt.Println(stream)
+			commands_capture =append(commands_capture, stream)
+		}
+
+	}
+
+	for _, cmd := range commands_capture{
+		fmt.Println("cmd:", cmd)
+	}
+    return commands_capture
+}
+
+
+
+func Overlay_fonter(file string){
+	file_path :=path.Join("./upload", file) 
+	compose := "composite -gravity center /home/src_img/fonter.png "+file_path +" "+file_path
+	wg := new(sync.WaitGroup)
+    wg.Add(1)
+    go exe_cmd(compose, wg)
+    wg.Wait()
+}
+
+
 func Getfilesdir() []string {
 
 	files_to_upload := make([]string, 0)
-	dirname := "./upload" + string(filepath.Separator)
+	dirname := path.Join("./upload", string(filepath.Separator)) 
 	d, err := os.Open(dirname)
 	if err != nil {
 		panic(err)
@@ -198,54 +262,57 @@ func DiskUsage(serv_url string, device_name string, path string) {
 }
 
 
+func exe_cmd(cmd string, wg *sync.WaitGroup) {
+	fmt.Println("command is ",cmd)
+	// splitting head => g++ parts => rest of the command
+	parts := strings.Fields(cmd)
+	head := parts[0]
+	args := parts[1:len(parts)]
+	cmd_exec := exec.Command(head, args...)
+	//	Sanity check -- capture stdout and stderr:
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd_exec.Stdout = &out
+	cmd_exec.Stderr = &stderr
+
+	//	Run the command
+	cmd_exec.Run()
+
+	//	Output our results
+	fmt.Printf("Result: %v / %v", out.String(), stderr.String())
+	wg.Done() // Need to signal to waitgroup that this goroutine is done
+  }
 
 
 
 func main() {
 	//login()
+
 	fmt.Println("max parallelism is:", utils.MaxParallelism())
 	readcfg := readconfig.Config_reader("./readconfig/frame_case.conf")
 	server_url := "http://" + readcfg.Connection.Host + ":" + strconv.Itoa(readcfg.Connection.Port)
 	device := readcfg.Connection.Devicename
+
 	GetCommands(server_url, device)
 
-	files := Getfilesdir()
+	formated_cmds := FormatCommands(readcfg)
+
+	wg := new(sync.WaitGroup)
+    for _, str := range formated_cmds {
+        wg.Add(1)
+        go exe_cmd(str, wg)
+    }
+    wg.Wait()
+
+
+    files := Getfilesdir()
 	for _, filename := range files {
 		fmt.Println("files in dir is:", filename)
+		Overlay_fonter(filename)
 		UploadImage(server_url, device, filename)
 	}
+
 	DiskUsage(server_url, device, "/")
-
-	dictionary := map[int]*Ip_stream{}
-	for _,i := range readcfg.Cameras_block.Cameras_stream{
-		ipStream := Ip_stream{ 
-			Stream:i.Stream}
-		dictionary[i.Cameras_type] = &ipStream
-	}
-	for _, i := range readcfg.Cameras_block.Cameras_type{
-		obj := dictionary[i.Type]
-		obj.Type = i.Value
-	}
-
-	for _, i := range readcfg.Cameras_block.Cameras_address{
-		obj := dictionary[i.Type]
-		//fmt.Println("---->", i.Value)
-		obj.Ip  = append(obj.Ip,i.Value)
-	}
-
-	//for i, x := range dictionary{
-	//	fmt.Print(i, " -> " ,x)
-	//	fmt.Println()
-		
-	//}
-	for _, x:= range dictionary{
-		for _, ip:= range x.Ip{
-			stream :=strings.Replace(x.Stream, "{ip}", ip, 1)
-			stream =strings.Replace(stream, "{port}", "554", 1)
-			fmt.Println(stream)
-		}
-
-	}
 
 
 
