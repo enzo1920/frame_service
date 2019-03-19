@@ -139,15 +139,22 @@ func UploadImage(serv_url string, dev_name string, filename string) {
 	fmt.Println(resp.Status)
 
 }
-func GetUrlFromConfig(cfg readconfig.Configuration) {
-	//api_token := cfg.Api_token
+func GetUrlFromConfig(cfg readconfig.Configuration) map[int]*Api_Url{
+	api_token := cfg.Api_token
 	//api_url := cfg.Api_Urls
 	//dict := map[int]*Api_Url{}
-	for _, cmd_url := range cfg.Api_Urls {
-		fmt.Println("cmd_url", cmd_url)
-	}
+	dictionary := map[int]*Api_Url{}
 
+	for i, cmd_url := range cfg.Api_Urls {
+        dictionary[i]= &Api_Url{cmd_url.Api_command,strings.Replace(cmd_url.Url, "{api_token}", api_token, 1)}
+		//fmt.Println("cmd_url", cmd_url.Api_command, strings.Replace(cmd_url.Url, "{api_token}", api_token, 1))
+	}
+	for _, ds := range dictionary{
+		fmt.Println("dict struct:", ds.Command, ds.Url)
+	}
+	return dictionary
 }
+
 
 // func for formating rtsp-stream from config
 func FormatCommands(cfg readconfig.Configuration) []string {
@@ -347,9 +354,10 @@ func main() {
 	device := readcfg.Connection.Devicename
 	token := readcfg.Api_token
 	api_urls := readcfg.Api_Urls
+	commands_confg := GetUrlFromConfig(readcfg)
 	fmt.Println("api urls:", api_urls)
 	fmt.Println("api token:", token)
-	GetUrlFromConfig(readcfg)
+	fmt.Println("api commans_confg:", commands_confg)
 	GetCommands(server_url, device)
 	/*
 		//capture images and send
