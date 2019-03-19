@@ -8,7 +8,7 @@ import (
 )
 
 /*type Configuration struct {
-		Host  string 
+		Host  string
 		Devicename  string
 		Password string
 		Port  int
@@ -18,35 +18,37 @@ import (
 
 type Configuration struct {
 	Connection struct {
-		Host  string 
-		Devicename  string
-		Password string
-		Port  int
+		Host       string
+		Devicename string
+		Password   string
+		Port       int
 	}
 	Cameras_block struct {
-		Cameras_address  [] struct{
-			Type int
+		Cameras_address []struct {
+			Type  int
 			Value string `json:"ip_address"`
 		}
-		Cameras_type  [] struct{
-			Type int
+		Cameras_type []struct {
+			Type  int
 			Value string
 		}
-		Cameras_stream  [] struct{
+		Cameras_stream []struct {
 			Cameras_type int
-			Stream string
+			Stream       string
 		}
 	}
-	Device_name string
+	Api_Urls []struct {
+		Api_command string
+		Url         string
+	}
+	Api_token string `json:"api_token"`
 }
 
 type Ip_stream struct {
-	Ip []string 
-	Type string
+	Ip     []string
+	Type   string
 	Stream string
 }
-
-
 
 //func config_reader(cfg_file string)([]string){
 func Config_reader(cfg_file string) Configuration {

@@ -43,6 +43,11 @@ type Ip_stream struct {
 	Stream string
 }
 
+type Api_Url struct {
+	Command string
+	Url     string
+}
+
 const (
 	B  = 1
 	KB = 1024 * B
@@ -134,6 +139,15 @@ func UploadImage(serv_url string, dev_name string, filename string) {
 	fmt.Println(resp.Status)
 
 }
+func GetUrlFromConfig(cfg readconfig.Configuration) {
+	//api_token := cfg.Api_token
+	//api_url := cfg.Api_Urls
+	//dict := map[int]*Api_Url{}
+	for _, cmd_url := range cfg.Api_Urls {
+		fmt.Println("cmd_url", cmd_url)
+	}
+
+}
 
 // func for formating rtsp-stream from config
 func FormatCommands(cfg readconfig.Configuration) []string {
@@ -142,6 +156,7 @@ func FormatCommands(cfg readconfig.Configuration) []string {
 	commands_capture := make([]string, 0)
 
 	dictionary := map[int]*Ip_stream{}
+
 	for _, i := range cfg.Cameras_block.Cameras_stream {
 		ipStream := Ip_stream{
 			Stream: i.Stream}
@@ -330,17 +345,22 @@ func main() {
 	readcfg := readconfig.Config_reader("./readconfig/frame_case.conf")
 	server_url := "http://" + readcfg.Connection.Host + ":" + strconv.Itoa(readcfg.Connection.Port)
 	device := readcfg.Connection.Devicename
-
+	token := readcfg.Api_token
+	api_urls := readcfg.Api_Urls
+	fmt.Println("api urls:", api_urls)
+	fmt.Println("api token:", token)
+	GetUrlFromConfig(readcfg)
 	GetCommands(server_url, device)
 	/*
-	   	formated_cmds := FormatCommands(readcfg)
+		//capture images and send
+		   	formated_cmds := FormatCommands(readcfg)
 
-	   	wg := new(sync.WaitGroup)
-	       for _, str := range formated_cmds {
-	           wg.Add(1)
-	           go exe_cmd(str, wg)
-	       }
-	       wg.Wait()
+		   	wg := new(sync.WaitGroup)
+		       for _, str := range formated_cmds {
+		           wg.Add(1)
+		           go exe_cmd(str, wg)
+		       }
+		       wg.Wait()
 	*/
 
 	files := Getfilesdir()
