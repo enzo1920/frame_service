@@ -53,8 +53,6 @@ func AddV2Routes(r *mux.Router) {
 // AddRoutes takes a router or subrouter and adds all the latest
 // routes to it
 func AddRoutes(r *mux.Router) {
-	r.HandleFunc("/signin", models.Signin).Methods("POST")
-	r.HandleFunc("/signup", models.Signup).Methods("POST")
 	r.HandleFunc("/getcommand/", models.GetCommands).Methods("GET")
 	r.HandleFunc("/getcams", models.Cam_adr_get).Methods("GET")
 	r.HandleFunc("/upload/", models.UploadHandler).Methods("POST")

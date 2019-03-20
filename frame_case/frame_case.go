@@ -55,39 +55,6 @@ const (
 	GB = 1024 * MB
 )
 
-/*
-func login() {
-	user := &User{Login: "****", Password: "****"}
-	jsonStr, err := json.Marshal(user)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(string(jsonStr))
-
-	url := "http://host:8080/signin"
-	fmt.Println("URL:>", url)
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
-	req.Header.Set("X-Custom-Header", "myvalue")
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	fmt.Println("req:>", req)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	fmt.Println("response Status:", resp.Status)
-	fmt.Println("response Headers:", resp.Header)
-	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
-}
-*/
-//
 func GetCommands(serv_url string, dev_name string) {
 	user := &User{Login: dev_name}
 	jsonStr, err := json.Marshal(user)
@@ -113,8 +80,11 @@ func GetCommands(serv_url string, dev_name string) {
 	fmt.Println("response Headers:", resp.Header)
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	cmds := string(body)
-	fmt.Println("response Body cmds:", string(cmds))
+	cmds := strings.Split(string(body), ",")
+	for _, cmd := range cmds {
+		fmt.Println("response  cmd:", cmd)
+	}
+	//fmt.Println("response Body cmds:", string(cmds))
 }
 
 func UploadImage(serv_url string, dev_name string, filename string) {
@@ -364,7 +334,10 @@ func main() {
 	fmt.Println("api urls:", api_urls)
 	fmt.Println("api token:", token)
 	fmt.Println("api ret url:", url_command)
-	GetCommands(server_url+url_command, device)
+	err := GetCommands(server_url+url_command, device)
+	if err != nil {
+		fmt.Println("error get comands", err)
+	}
 	/*
 		//capture images and send
 		   	formated_cmds := FormatCommands(readcfg)
