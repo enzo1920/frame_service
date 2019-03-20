@@ -14,7 +14,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -178,7 +177,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 
 func GetCommands(w http.ResponseWriter, r *http.Request) {
 
-	keys, ok := r.URL.Query()["device"]
+	keys, ok := r.URL.Query()["token"]
 
 	if !ok || len(keys[0]) < 1 {
 		log.Println("Url Param 'device' is missing")
@@ -225,42 +224,28 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 //upload image handler
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
-	contentDisposition := r.Header.Get("Content-Disposition")
-    //devicename := r.Header.Get("X-Custom-Header")// get devname from custom header
-	//fmt.Printf("Custom header is: %s\n", devicename)
-	_, params, err := mime.ParseMediaType(contentDisposition)
-	filename := params["filename"] // get filename from header
-	devicename := params["name"]
-	fmt.Printf("header is: %s\n", devicename)
-	fmt.Printf("response file %s\n", filename)
-	//get date from filename
-	re := regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
-	submatchall := re.FindAllString(filename, -1)
-	for _, element := range submatchall {
-		newpath := filepath.Join(".", "uploaded", element)
-		os.MkdirAll(newpath, os.ModePerm)
-		file, err := os.Create(filepath.Join(newpath, filename))
-		if err != nil {
-			log.Fatal(err)
-		}
-		n, err := io.Copy(file, r.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-		w.Write([]byte(fmt.Sprintf("%d bytes are recieved.\n", n)))
-		fmt.Println(element)
+	keys, ok := r.URL.Query()["token"]
+
+	if !ok || len(keys[0]) < 1 {
+		log.Println("Url Param 'token' is missing")
+		return
 	}
 
+	contentDisposition := r.Header.Get("Content-Disposition")
+	_, params, err := mime.ParseMediaType(contentDisposition)
+	filename := params["filename"] // get filename from header
+	token := string(keys[0])
 	//get dev_id from db
+	device_name := "TARS"
 	device_id := 0
-	err = db.QueryRow("select id from devices where device_name=$1", devicename).Scan(&device_id)
-	if err != nil {
+	err1 := db.QueryRow("select id, device_name from devices where dev_token=$1", token).Scan(&device_id, &device_name)
+	if err1 != nil {
 		// If there is an issue with the database, return a 500 error
-		fmt.Println("--->", err)
+		fmt.Println("--->", err1)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("id is:", device_id)
+	fmt.Println("dev_name:", device_name)
 	fmt.Println("select dev_id is ok!")
 	//work with remote addr
 	ip, port, err := net.SplitHostPort(r.RemoteAddr)
@@ -275,11 +260,35 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("userip: %q is not IP:port \n", r.RemoteAddr)
 		return
 	}
-    if _, err = db.Query("insert into  dev_upload_log values (DEFAULT,$1,$2,$3,$4, CURRENT_TIMESTAMP)", device_id, string(ip), port,filename ); err != nil {
+	if _, err := db.Query("insert into  dev_upload_log values (DEFAULT,$1,$2,$3,$4, CURRENT_TIMESTAMP)", device_id, string(ip), port, filename); err != nil {
 		// If there is any issue with inserting into the database, return a 500 error
 		log.Println(" insert dev_upload_log err", err)
 		//w.WriteHeader(http.StatusInternalServerError)
 		return
+	}
+
+	//devicename := r.Header.Get("X-Custom-Header")// get devname from custom header
+	//fmt.Printf("Custom header is: %s\n", devicename)
+
+	//devicename := params["name"]
+	//fmt.Printf("header is: %s\n", devicename)
+	fmt.Printf("response file %s\n", filename)
+	//get date from filename
+	re := regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
+	submatchall := re.FindAllString(filename, -1)
+	for _, element := range submatchall {
+		newpath := filepath.Join(".", "uploaded", device_name, element)
+		os.MkdirAll(newpath, os.ModePerm)
+		file, err := os.Create(filepath.Join(newpath, filename))
+		if err != nil {
+			log.Fatal(err)
+		}
+		n, err := io.Copy(file, r.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+		w.Write([]byte(fmt.Sprintf("%d bytes are recieved.\n", n)))
+		fmt.Println(element)
 	}
 
 }

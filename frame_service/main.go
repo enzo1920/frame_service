@@ -55,9 +55,9 @@ func AddV2Routes(r *mux.Router) {
 func AddRoutes(r *mux.Router) {
 	r.HandleFunc("/signin", models.Signin).Methods("POST")
 	r.HandleFunc("/signup", models.Signup).Methods("POST")
-	r.HandleFunc("/commands/", models.GetCommands).Methods("GET")
+	r.HandleFunc("/getcommand/", models.GetCommands).Methods("GET")
 	r.HandleFunc("/getcams", models.Cam_adr_get).Methods("GET")
-	r.HandleFunc("/upload", models.UploadHandler).Methods("POST")
+	r.HandleFunc("/upload/", models.UploadHandler).Methods("POST")
 	r.HandleFunc("/diskstate", models.DiskStateHandler).Methods("POST")
 	//r.HandleFunc("/ip", models.GetIP).Methods("GET")
 	//r.HandleFunc("/get-token", models.GetTokenHandler).Methods("GET")

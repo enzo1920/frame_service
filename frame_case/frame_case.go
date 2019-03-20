@@ -97,9 +97,7 @@ func GetCommands(serv_url string, dev_name string) {
 	}
 	//fmt.Println(string(jsonStr))
 
-	url := serv_url + "/v1/commands/?device=" + dev_name
-
-	req, err := http.NewRequest("GET", url, bytes.NewBuffer(jsonStr))
+	req, err := http.NewRequest("GET", serv_url, bytes.NewBuffer(jsonStr))
 	req.Header.Set("X-Custom-Header", "myvalue")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -129,7 +127,8 @@ func UploadImage(serv_url string, dev_name string, filename string) {
 	defer file.Close()
 
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", serv_url+"/upload", file)
+	fmt.Println("post", serv_url)
+	req, err := http.NewRequest("POST", serv_url, file)
 	if err != nil {
 		panic(err)
 	}
@@ -139,22 +138,28 @@ func UploadImage(serv_url string, dev_name string, filename string) {
 	fmt.Println(resp.Status)
 
 }
-func GetUrlFromConfig(cfg readconfig.Configuration) map[int]*Api_Url{
+func GetUrlFromConfig(cfg readconfig.Configuration, cmd_ret_url string) string {
 	api_token := cfg.Api_token
 	//api_url := cfg.Api_Urls
 	//dict := map[int]*Api_Url{}
+	default_cmd := "/"
 	dictionary := map[int]*Api_Url{}
 
 	for i, cmd_url := range cfg.Api_Urls {
-        dictionary[i]= &Api_Url{cmd_url.Api_command,strings.Replace(cmd_url.Url, "{api_token}", api_token, 1)}
+		dictionary[i] = &Api_Url{cmd_url.Api_command, strings.Replace(cmd_url.Url, "{api_token}", api_token, 1)}
+
 		//fmt.Println("cmd_url", cmd_url.Api_command, strings.Replace(cmd_url.Url, "{api_token}", api_token, 1))
 	}
-	for _, ds := range dictionary{
-		fmt.Println("dict struct:", ds.Command, ds.Url)
-	}
-	return dictionary
-}
+	for _, ds := range dictionary {
+		if cmd_ret_url == ds.Command {
+			fmt.Println("dict struct:", ds.Command, ds.Url)
+			return ds.Url
+		}
 
+	}
+	return default_cmd
+
+}
 
 // func for formating rtsp-stream from config
 func FormatCommands(cfg readconfig.Configuration) []string {
@@ -354,11 +359,12 @@ func main() {
 	device := readcfg.Connection.Devicename
 	token := readcfg.Api_token
 	api_urls := readcfg.Api_Urls
-	commands_confg := GetUrlFromConfig(readcfg)
+	url_upload := GetUrlFromConfig(readcfg, "upload")
+	url_command := GetUrlFromConfig(readcfg, "getcommand")
 	fmt.Println("api urls:", api_urls)
 	fmt.Println("api token:", token)
-	fmt.Println("api commans_confg:", commands_confg)
-	GetCommands(server_url, device)
+	fmt.Println("api ret url:", url_command)
+	GetCommands(server_url+url_command, device)
 	/*
 		//capture images and send
 		   	formated_cmds := FormatCommands(readcfg)
@@ -376,7 +382,7 @@ func main() {
 		fmt.Println("files in dir is:", filename)
 		//Overlay_fonter(filename)
 		Overlay_info(filename)
-		UploadImage(server_url, device, filename)
+		UploadImage(server_url+url_upload, device, filename)
 	}
 
 	DiskUsage(server_url, device, "/")
