@@ -198,6 +198,23 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DiskStateHandler(w http.ResponseWriter, r *http.Request) {
+	keys, ok := r.URL.Query()["token"]
+
+	if !ok || len(keys[0]) < 1 {
+		log.Println("Url Param 'token' is missing")
+		return
+	}
+	token := string(keys[0])
+	device_name := "TARS"
+	device_id := 0
+	err1 := db.QueryRow("select id, device_name from devices where dev_token=$1", token).Scan(&device_id, &device_name)
+	if err1 != nil {
+		// If there is an issue with the database, return a 500 error
+		fmt.Println("--->", err1)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	diskstate := &DiskStatus{}
 	err := json.NewDecoder(r.Body).Decode(diskstate)
 	if err != nil {
@@ -210,7 +227,7 @@ func DiskStateHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Used: %.2f GB\n", float64(diskstate.Used)/float64(GB))
 	fmt.Printf("Free: %.2f GB\n", float64(diskstate.Free)/float64(GB))
 
-	if _, err = db.Query("insert into  device_disk_state values (DEFAULT,$1,$2,$3,$4,$5, CURRENT_TIMESTAMP)", 11, diskstate.Disk_part,
+	if _, err = db.Query("insert into  device_disk_state values (DEFAULT,$1,$2,$3,$4,$5, CURRENT_TIMESTAMP)", device_id, diskstate.Disk_part,
 		FloatToString(float64(diskstate.All)/float64(GB)),
 		FloatToString(float64(diskstate.Used)/float64(GB)),
 		FloatToString(float64(diskstate.Free)/float64(GB))); err != nil {

@@ -260,9 +260,7 @@ func DiskUsage(serv_url string, device_name string, path string) error {
 	}
 	fmt.Println("fs_state_ json:", string(jsonDisk))
 
-	url := serv_url + "/v1/diskstate"
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonDisk))
+	req, err := http.NewRequest("POST", serv_url, bytes.NewBuffer(jsonDisk))
 	req.Header.Set("X-Custom-Header", "myvalue")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -338,39 +336,46 @@ func main() {
 	api_urls := readcfg.Api_Urls
 	url_upload := GetUrlFromConfig(readcfg, "upload")
 	url_command := GetUrlFromConfig(readcfg, "getcommand")
+	url_voluminfo := GetUrlFromConfig(readcfg, "volumeinfo")
 	fmt.Println("api urls:", api_urls)
 	fmt.Println("api token:", token)
 	fmt.Println("api ret url:", url_command)
-	err := GetCommands(server_url+url_command, device)
-	if err != nil {
-		fmt.Println("error GetCommands", err)
-	}
-	/*
-		//capture images and send
-		   	formated_cmds := FormatCommands(readcfg)
+	// while true loop
+	for {
+		fmt.Println("Starting connect to server")
 
-		   	wg := new(sync.WaitGroup)
-		       for _, str := range formated_cmds {
-		           wg.Add(1)
-		           go exe_cmd(str, wg)
-		       }
-		       wg.Wait()
-	*/
-
-	files := Getfilesdir()
-	for _, filename := range files {
-		fmt.Println("files in dir is:", filename)
-		//Overlay_fonter(filename)
-		Overlay_info(filename)
-		err := UploadImage(server_url+url_upload, device, filename)
+		err := GetCommands(server_url+url_command, device)
 		if err != nil {
-			fmt.Println("error UploadImage", err)
+			fmt.Println("error GetCommands", err)
 		}
-	}
+		/*
+			//capture images and send
+				formated_cmds := FormatCommands(readcfg)
 
-	err1 := DiskUsage(server_url, device, "/")
-	if err1 != nil {
-		fmt.Println("error DiskUsage", err1)
+				wg := new(sync.WaitGroup)
+				for _, str := range formated_cmds {
+					wg.Add(1)
+					go exe_cmd(str, wg)
+				}
+				wg.Wait()
+		*/
+		files := Getfilesdir()
+		for _, filename := range files {
+			fmt.Println("files in dir is:", filename)
+			//Overlay_fonter(filename)
+			Overlay_info(filename)
+			err := UploadImage(server_url+url_upload, device, filename)
+			if err != nil {
+				fmt.Println("error UploadImage", err)
+			}
+		}
+
+		err1 := DiskUsage(server_url+url_voluminfo, device, "/")
+		if err1 != nil {
+			fmt.Println("error DiskUsage", err1)
+		}
+
+		time.Sleep(10 * time.Second)
 	}
 
 }
