@@ -55,16 +55,18 @@ const (
 	GB = 1024 * MB
 )
 
-func GetCommands(serv_url string, dev_name string) {
+func GetCommands(serv_url string, dev_name string) error {
 	user := &User{Login: dev_name}
 	jsonStr, err := json.Marshal(user)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 	//fmt.Println(string(jsonStr))
 
 	req, err := http.NewRequest("GET", serv_url, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		return err
+	}
 	req.Header.Set("X-Custom-Header", "myvalue")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -72,7 +74,7 @@ func GetCommands(serv_url string, dev_name string) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer resp.Body.Close()
 
@@ -84,14 +86,15 @@ func GetCommands(serv_url string, dev_name string) {
 	for _, cmd := range cmds {
 		fmt.Println("response  cmd:", cmd)
 	}
+	return nil
 	//fmt.Println("response Body cmds:", string(cmds))
 }
 
-func UploadImage(serv_url string, dev_name string, filename string) {
+func UploadImage(serv_url string, dev_name string, filename string) error {
 
 	file, err := os.Open(path.Join("./upload/", filename))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	fmt.Println("open file to send:", filename)
 	defer file.Close()
@@ -100,12 +103,16 @@ func UploadImage(serv_url string, dev_name string, filename string) {
 	fmt.Println("post", serv_url)
 	req, err := http.NewRequest("POST", serv_url, file)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	req.Header.Add("Content-Disposition", "form-data; name="+dev_name+"; filename="+filename)
 	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
 	fmt.Println(resp.Status)
+	return nil
 
 }
 func GetUrlFromConfig(cfg readconfig.Configuration, cmd_ret_url string) string {
@@ -233,11 +240,11 @@ func Getfilesdir() []string {
 	return files_to_upload
 }
 
-func DiskUsage(serv_url string, device_name string, path string) {
+func DiskUsage(serv_url string, device_name string, path string) error {
 	fs := syscall.Statfs_t{}
 	err := syscall.Statfs(path, &fs)
 	if err != nil {
-		return
+		return err
 	}
 	disk := &DiskStatus{}
 	disk.Device = device_name
@@ -248,8 +255,8 @@ func DiskUsage(serv_url string, device_name string, path string) {
 
 	jsonDisk, err := json.Marshal(disk)
 	if err != nil {
-		fmt.Println(err)
-		return
+		//fmt.Println(err)
+		return err
 	}
 	fmt.Println("fs_state_ json:", string(jsonDisk))
 
@@ -263,14 +270,14 @@ func DiskUsage(serv_url string, device_name string, path string) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer resp.Body.Close()
 
 	fmt.Println("response Status:", resp.Status)
 	fmt.Println("response Headers:", resp.Header)
 
-	//return
+	return nil
 }
 
 func exe_cmd(cmd string, wg *sync.WaitGroup) {
@@ -336,7 +343,7 @@ func main() {
 	fmt.Println("api ret url:", url_command)
 	err := GetCommands(server_url+url_command, device)
 	if err != nil {
-		fmt.Println("error get comands", err)
+		fmt.Println("error GetCommands", err)
 	}
 	/*
 		//capture images and send
@@ -355,9 +362,15 @@ func main() {
 		fmt.Println("files in dir is:", filename)
 		//Overlay_fonter(filename)
 		Overlay_info(filename)
-		UploadImage(server_url+url_upload, device, filename)
+		err := UploadImage(server_url+url_upload, device, filename)
+		if err != nil {
+			fmt.Println("error UploadImage", err)
+		}
 	}
 
-	DiskUsage(server_url, device, "/")
+	err1 := DiskUsage(server_url, device, "/")
+	if err1 != nil {
+		fmt.Println("error DiskUsage", err1)
+	}
 
 }
