@@ -1,7 +1,6 @@
 package models
 
 import (
-	
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+    "io/ioutil"
 	_ "github.com/lib/pq"
 )
 
@@ -37,7 +37,6 @@ type DiskStatus struct {
 	Used      uint64 `json:"used"`
 	Free      uint64 `json:"free"`
 }
-
 
 func FloatToString(input_num float64) string {
 	// to convert a float number to a string
@@ -77,7 +76,6 @@ func Cam_adr_get(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprintf(w, "%s are %d ", strings.Join(ip_addrs, ", "), cam_type)
 }
-
 
 func GetCommands(w http.ResponseWriter, r *http.Request) {
 
@@ -124,6 +122,40 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", strings.Join(cmds, ","))
 
 }
+/*
+func DownloadHandler(w http.ResponseWriter, r *http.Request) {
+	//from request get datime and device name
+	//return urls of files to web interface
+	
+	file, err := ioutil.ReadFile("upload/img/orel.jpg")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-type", "image/png")
+	w.Write(file)
+	
+
+}*/
+
+func UploadTempHandler(w http.ResponseWriter, r *http.Request){
+	keys, ok := r.URL.Query()["token"]
+
+	if !ok || len(keys[0]) < 1 {
+		log.Println("Url Param 'token' is missing")
+		return
+	}
+	token := string(keys[0])
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Println(err)
+
+	}
+    bodyString := string(body)
+	fmt.Printf("temp is:%s, token is %s\n", bodyString, token)
+}
+
+
 
 //upload image handler
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -164,13 +196,15 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("userip: %q is not IP:port \n", r.RemoteAddr)
 		return
 	}
-	if _, err := db.Query("insert into  dev_upload_log values (DEFAULT,$1,$2,$3,$4, CURRENT_TIMESTAMP)", device_id, string(ip), port, filename); err != nil {
+	rows, err := db.Query("insert into  dev_upload_log values (DEFAULT,$1,$2,$3,$4, CURRENT_TIMESTAMP)", device_id, string(ip), port, filename)
+	if err != nil {
 		// If there is any issue with inserting into the database, return a 500 error
 		log.Println(" insert dev_upload_log err", err)
 		//w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	defer rows.Close()
 	//devicename := r.Header.Get("X-Custom-Header")// get devname from custom header
 	//fmt.Printf("Custom header is: %s\n", devicename)
 
@@ -227,15 +261,17 @@ func DiskStateHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Used: %.2f GB\n", float64(diskstate.Used)/float64(GB))
 	fmt.Printf("Free: %.2f GB\n", float64(diskstate.Free)/float64(GB))
 
-	if _, err = db.Query("insert into  device_disk_state values (DEFAULT,$1,$2,$3,$4,$5, CURRENT_TIMESTAMP)", device_id, diskstate.Disk_part,
+	rows, err := db.Query("insert into  device_disk_state values (DEFAULT,$1,$2,$3,$4,$5, CURRENT_TIMESTAMP)", device_id, diskstate.Disk_part,
 		FloatToString(float64(diskstate.All)/float64(GB)),
 		FloatToString(float64(diskstate.Used)/float64(GB)),
-		FloatToString(float64(diskstate.Free)/float64(GB))); err != nil {
+		FloatToString(float64(diskstate.Free)/float64(GB)))
+	if err != nil {
 		// If there is any issue with inserting into the database, return a 500 error
 		log.Println(" insert err", err)
 		//w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	defer rows.Close()
 	w.WriteHeader(http.StatusOK)
 
 }

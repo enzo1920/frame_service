@@ -96,7 +96,7 @@ func UploadImage(serv_url string, dev_name string, filename string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("open file to send:", filename)
+	//fmt.Println("open file to send:", filename)
 	defer file.Close()
 
 	client := &http.Client{}
@@ -361,7 +361,7 @@ func main() {
 		*/
 		files := Getfilesdir()
 		for _, filename := range files {
-			fmt.Println("files in dir is:", filename)
+			//fmt.Println("files in dir is:", filename)
 			//Overlay_fonter(filename)
 			Overlay_info(filename)
 			err := UploadImage(server_url+url_upload, device, filename)
