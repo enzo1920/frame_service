@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"mime"
 	"net"
@@ -13,7 +14,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-    "io/ioutil"
+
 	_ "github.com/lib/pq"
 )
 
@@ -122,11 +123,12 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", strings.Join(cmds, ","))
 
 }
+
 /*
 func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	//from request get datime and device name
 	//return urls of files to web interface
-	
+
 	file, err := ioutil.ReadFile("upload/img/orel.jpg")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -134,11 +136,11 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-type", "image/png")
 	w.Write(file)
-	
+
 
 }*/
 
-func UploadTempHandler(w http.ResponseWriter, r *http.Request){
+func UploadTempHandler(w http.ResponseWriter, r *http.Request) {
 	keys, ok := r.URL.Query()["token"]
 
 	if !ok || len(keys[0]) < 1 {
@@ -146,16 +148,32 @@ func UploadTempHandler(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	token := string(keys[0])
+
+	device_id := 0
+	err1 := db.QueryRow("select id from devices where dev_token=$1", token).Scan(&device_id)
+	if err1 != nil {
+		// If there is an issue with the database, return a 500 error
+		fmt.Println("--->", err1)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	log.Println("dev_id upload temp:", device_id)
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Println(err)
 
 	}
-    bodyString := string(body)
+	bodyString := string(body)
 	fmt.Printf("temp is:%s, token is %s\n", bodyString, token)
+	rows, err := db.Query("insert into  temp_stat values (DEFAULT,$1,$2, CURRENT_TIMESTAMP)", &device_id, &bodyString)
+	if err != nil {
+		// If there is any issue with inserting into the database, return a 500 error
+		log.Println(" insert dev_upload_log err", err)
+		//w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
 }
-
-
 
 //upload image handler
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
