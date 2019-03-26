@@ -37,6 +37,11 @@ type DiskStatus struct {
 	Free      uint64 `json:"free"`
 }
 
+type CmdsToExec struct {
+	Cmd_id   int    `json:"cmd_id"`
+	Cmd_name string `json:"cmd_name"`
+}
+
 type Ip_stream struct {
 	Ip     []string
 	Type   string
@@ -72,20 +77,26 @@ func GetCommands(serv_url string, dev_name string) error {
 
 	client := &http.Client{}
 
-	resp, err := client.Do(req)
+	r, err := client.Do(req)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer r.Body.Close()
 
-	fmt.Println("response Status:", resp.Status)
-	fmt.Println("response Headers:", resp.Header)
+	fmt.Println("response Status:", r.Status)
+	fmt.Println("response Headers:", r.Header)
 
-	body, _ := ioutil.ReadAll(resp.Body)
-	cmds := strings.Split(string(body), ",")
-	for _, cmd := range cmds {
-		fmt.Println("response  cmd:", cmd)
+	body, _ := ioutil.ReadAll(r.Body)
+	fmt.Println("Body", string(body))
+
+	ce := &CmdsToExec{}
+	err_json := json.NewDecoder(r.Body).Decode(ce)
+	if err_json != nil {
+
+		return err_json
 	}
+	fmt.Println("cmd", ce.Cmd_id)
+
 	return nil
 	//fmt.Println("response Body cmds:", string(cmds))
 }
@@ -147,8 +158,7 @@ func FormatCommands(cfg readconfig.Configuration) []string {
 	dictionary := map[int]*Ip_stream{}
 
 	for _, i := range cfg.Cameras_block.Cameras_stream {
-		ipStream := Ip_stream{
-			Stream: i.Stream}
+		ipStream := Ip_stream{Stream: i.Stream}
 		dictionary[i.Cameras_type] = &ipStream
 	}
 	for _, i := range cfg.Cameras_block.Cameras_type {

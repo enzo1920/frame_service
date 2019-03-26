@@ -39,6 +39,11 @@ type DiskStatus struct {
 	Free      uint64 `json:"free"`
 }
 
+type CmdsToExec struct {
+	Cmd_id   int    `json:"cmd_id"`
+	Cmd_name string `json:"cmd_name"`
+}
+
 func FloatToString(input_num float64) string {
 	// to convert a float number to a string
 	return strconv.FormatFloat(input_num, 'f', 6, 64)
@@ -90,24 +95,34 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 	// Query()["key"] will return an array of items,
 	// we only want the single item.
 	dev_token := string(keys[0])
-	rows, err := db.Query("SELECT cmd_name FROM commands as c inner join commands_ex as ce on c.id=ce.cmd_id"+
+	rows, err := db.Query("SELECT ce.id, cmd_name FROM commands as c inner join commands_ex as ce on c.id=ce.cmd_id"+
 		" INNER join devices as d on d.id= ce.device_id"+
 		" INNER join command_status cs on cs.id=ce.status_id WHERE d.dev_token =$1", dev_token)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
-	cmds := make([]string, 0)
+	//собираем команды в массив структур
 
+	//cmds := make([]string, 0)
+	var commands []CmdsToExec
 	for rows.Next() {
-		var cmd string
-		if err := rows.Scan(&cmd); err != nil {
+		var ce CmdsToExec
+		if err := rows.Scan(&ce.Cmd_id, &ce.Cmd_name); err != nil {
 			// Check for a scan error.
 			// Query rows will be closed with defer.
 			log.Fatal(err)
 		}
-		cmds = append(cmds, cmd)
+		//cmds = append(cmds, cmd)
+		commands = append(commands, ce)
 	}
+
+	sendcommans, err := json.Marshal(commands)
+	if err != nil {
+		//fmt.Println(err)
+		fmt.Println(err)
+	}
+	fmt.Println("sendcommands json:", string(sendcommans))
 	// If the database is being written to ensure to check for Close
 	// errors that may be returned from the driver. The query may
 	// encounter an auto-commit error and be forced to rollback changes.
@@ -120,7 +135,7 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Fprintf(w, "%s", strings.Join(cmds, ","))
+	fmt.Fprintf(w, string(sendcommans))
 
 }
 
@@ -164,11 +179,11 @@ func UploadTempHandler(w http.ResponseWriter, r *http.Request) {
 
 	}
 	bodyString := string(body)
-	fmt.Printf("temp is:%s, token is %s\n", bodyString, token)
+	log.Printf("temp is:%s, token is %s\n", bodyString, token)
 	rows, err := db.Query("insert into  temp_stat values (DEFAULT,$1,$2, CURRENT_TIMESTAMP)", &device_id, &bodyString)
 	if err != nil {
 		// If there is any issue with inserting into the database, return a 500 error
-		log.Println(" insert dev_upload_log err", err)
+		log.Println(" insert temp_stat err", err)
 		//w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
