@@ -89,13 +89,12 @@ func GetCommands(serv_url string, dev_name string) error {
 	body, _ := ioutil.ReadAll(r.Body)
 	fmt.Println("Body", string(body))
 
-	ce := &CmdsToExec{}
-	err_json := json.NewDecoder(r.Body).Decode(ce)
-	if err_json != nil {
-
-		return err_json
+	var ce []CmdsToExec
+	json.Unmarshal(body, &ce)
+	fmt.Printf("cmds : %+v\n", ce)
+	for _, v := range ce {
+		fmt.Println(v.Cmd_id, v.Cmd_name)
 	}
-	fmt.Println("cmd", ce.Cmd_id)
 
 	return nil
 	//fmt.Println("response Body cmds:", string(cmds))

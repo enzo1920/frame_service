@@ -135,7 +135,9 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Fprintf(w, string(sendcommans))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(sendcommans)
 
 }
 
