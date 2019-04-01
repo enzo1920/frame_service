@@ -48,6 +48,11 @@ type Ip_stream struct {
 	Stream string
 }
 
+type Set_cmds struct {
+	Cmd_id     int `json:"cmd_id"`
+	Cmd_status int `json:"cmd_status"`
+}
+
 type Api_Url struct {
 	Command string
 	Url     string
@@ -98,6 +103,38 @@ func GetCommands(serv_url string, dev_name string) error {
 
 	return nil
 	//fmt.Println("response Body cmds:", string(cmds))
+}
+
+func SetCommandStatus(serv_url string, cmd_id int, cmd_status int) error {
+
+	set_command := &Set_cmds{}
+	set_command.Cmd_id = cmd_id
+	set_command.Cmd_status = cmd_status
+	jsonDisk, err := json.Marshal(set_command)
+	if err != nil {
+		//fmt.Println(err)
+		return err
+	}
+
+	fmt.Println("cmd_set json:", string(jsonDisk))
+
+	req, err := http.NewRequest("POST", serv_url, bytes.NewBuffer(jsonDisk))
+	req.Header.Set("X-Custom-Header", "cmd_set")
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("response Status:", resp.Status)
+	fmt.Println("response Headers:", resp.Header)
+
+	return nil
+
 }
 
 func UploadImage(serv_url string, dev_name string, filename string) error {
@@ -346,6 +383,7 @@ func main() {
 	url_upload := GetUrlFromConfig(readcfg, "upload")
 	url_command := GetUrlFromConfig(readcfg, "getcommand")
 	url_voluminfo := GetUrlFromConfig(readcfg, "volumeinfo")
+	url_setcmd := GetUrlFromConfig(readcfg, "setcmd")
 	fmt.Println("api urls:", api_urls)
 	fmt.Println("api token:", token)
 	fmt.Println("api ret url:", url_command)
@@ -382,6 +420,11 @@ func main() {
 		err1 := DiskUsage(server_url+url_voluminfo, device, "/")
 		if err1 != nil {
 			fmt.Println("error DiskUsage", err1)
+		}
+
+		err_set := SetCommandStatus(server_url+url_setcmd, 3, 2)
+		if err1 != nil {
+			fmt.Println("error Set command", err_set)
 		}
 
 		time.Sleep(10 * time.Second)

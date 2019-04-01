@@ -44,6 +44,11 @@ type CmdsToExec struct {
 	Cmd_name string `json:"cmd_name"`
 }
 
+type Set_cmds struct {
+	Cmd_id     int `json:"cmd_id"`
+	Cmd_status int `json:"cmd_status"`
+}
+
 func FloatToString(input_num float64) string {
 	// to convert a float number to a string
 	return strconv.FormatFloat(input_num, 'f', 6, 64)
@@ -186,6 +191,44 @@ func UploadTempHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// If there is any issue with inserting into the database, return a 500 error
 		log.Println(" insert temp_stat err", err)
+		//w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+}
+
+func SetCommandHandler(w http.ResponseWriter, r *http.Request) {
+	keys, ok := r.URL.Query()["token"]
+
+	if !ok || len(keys[0]) < 1 {
+		log.Println("Url Param 'token' is missing")
+		return
+	}
+	token := string(keys[0])
+
+	device_id := 0
+	err1 := db.QueryRow("select id from devices where dev_token=$1", token).Scan(&device_id)
+	if err1 != nil {
+		// If there is an issue with the database, return a 500 error
+		fmt.Println("--->", err1)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	log.Println("dev_id set_cmd_status:", device_id)
+
+	cmd_status := &Set_cmds{}
+	err := json.NewDecoder(r.Body).Decode(cmd_status)
+	if err != nil {
+		// If there is something wrong with the request body, return a 400 status
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("cmd is:%s, status is %s\n", cmd_status.Cmd_id, cmd_status.Cmd_status)
+	rows, err := db.Query("update commands_ex set status_id=$1 where cmd_id=$2 and device_id=$3", &cmd_status.Cmd_status, &cmd_status.Cmd_id, &device_id)
+	if err != nil {
+		// If there is any issue with inserting into the database, return a 500 error
+		log.Println("update commands_exerr", err)
 		//w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

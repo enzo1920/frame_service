@@ -58,6 +58,7 @@ func AddRoutes(r *mux.Router) {
 	r.HandleFunc("/upload/", models.UploadHandler).Methods("POST")
 	r.HandleFunc("/uploadtemp/", models.UploadTempHandler).Methods("POST")
 	r.HandleFunc("/devvolumeinfo/", models.DiskStateHandler).Methods("POST")
+	r.HandleFunc("/setcmd/", models.SetCommandHandler).Methods("POST")
 	//r.HandleFunc("/ip", models.GetIP).Methods("GET")
 	//r.HandleFunc("/get-token", models.GetTokenHandler).Methods("GET")
 }
