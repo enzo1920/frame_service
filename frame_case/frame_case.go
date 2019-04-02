@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -16,14 +15,10 @@ import (
 	"syscall"
 	"time"
 
+	"./models"
 	"./readconfig"
 	"./utils"
 )
-
-type User struct {
-	Login    string `json:"username"`
-	Password string `json:"password"`
-}
 
 type Cmd struct {
 	Login string `json:"username"`
@@ -37,20 +32,10 @@ type DiskStatus struct {
 	Free      uint64 `json:"free"`
 }
 
-type CmdsToExec struct {
-	Cmd_id   int    `json:"cmd_id"`
-	Cmd_name string `json:"cmd_name"`
-}
-
 type Ip_stream struct {
 	Ip     []string
 	Type   string
 	Stream string
-}
-
-type Set_cmds struct {
-	Cmd_id     int `json:"cmd_id"`
-	Cmd_status int `json:"cmd_status"`
 }
 
 type Api_Url struct {
@@ -64,78 +49,6 @@ const (
 	MB = 1024 * KB
 	GB = 1024 * MB
 )
-
-func GetCommands(serv_url string, dev_name string) error {
-	user := &User{Login: dev_name}
-	jsonStr, err := json.Marshal(user)
-	if err != nil {
-		return err
-	}
-	//fmt.Println(string(jsonStr))
-
-	req, err := http.NewRequest("GET", serv_url, bytes.NewBuffer(jsonStr))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("X-Custom-Header", "myvalue")
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-
-	r, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer r.Body.Close()
-
-	fmt.Println("response Status:", r.Status)
-	fmt.Println("response Headers:", r.Header)
-
-	body, _ := ioutil.ReadAll(r.Body)
-	fmt.Println("Body", string(body))
-
-	var ce []CmdsToExec
-	json.Unmarshal(body, &ce)
-	fmt.Printf("cmds : %+v\n", ce)
-	for _, v := range ce {
-		fmt.Println(v.Cmd_id, v.Cmd_name)
-	}
-
-	return nil
-	//fmt.Println("response Body cmds:", string(cmds))
-}
-
-func SetCommandStatus(serv_url string, cmd_id int, cmd_status int) error {
-
-	set_command := &Set_cmds{}
-	set_command.Cmd_id = cmd_id
-	set_command.Cmd_status = cmd_status
-	jsonDisk, err := json.Marshal(set_command)
-	if err != nil {
-		//fmt.Println(err)
-		return err
-	}
-
-	fmt.Println("cmd_set json:", string(jsonDisk))
-
-	req, err := http.NewRequest("POST", serv_url, bytes.NewBuffer(jsonDisk))
-	req.Header.Set("X-Custom-Header", "cmd_set")
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	fmt.Println("response Status:", resp.Status)
-	fmt.Println("response Headers:", resp.Header)
-
-	return nil
-
-}
 
 func UploadImage(serv_url string, dev_name string, filename string) error {
 
@@ -390,11 +303,19 @@ func main() {
 	// while true loop
 	for {
 		fmt.Println("Starting connect to server")
-
-		err := GetCommands(server_url+url_command, device)
+		//получаем и сразу выставляем статус
+		gcmds, err := models.GetCommands(server_url+url_command, device)
 		if err != nil {
 			fmt.Println("error GetCommands", err)
 		}
+		for _, v := range gcmds {
+			fmt.Println(v.Cmd_id, v.Cmd_name)
+			err_set := models.SetCommandStatus(server_url+url_setcmd, v.Cmd_id, 2)
+			if err_set != nil {
+				fmt.Println("error Set command", err_set)
+			}
+		}
+
 		/*
 			//capture images and send
 				formated_cmds := FormatCommands(readcfg)
@@ -420,11 +341,6 @@ func main() {
 		err1 := DiskUsage(server_url+url_voluminfo, device, "/")
 		if err1 != nil {
 			fmt.Println("error DiskUsage", err1)
-		}
-
-		err_set := SetCommandStatus(server_url+url_setcmd, 3, 2)
-		if err1 != nil {
-			fmt.Println("error Set command", err_set)
 		}
 
 		time.Sleep(10 * time.Second)

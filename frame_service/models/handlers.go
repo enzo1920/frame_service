@@ -102,7 +102,7 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 	dev_token := string(keys[0])
 	rows, err := db.Query("SELECT ce.id, cmd_name FROM commands as c inner join commands_ex as ce on c.id=ce.cmd_id"+
 		" INNER join devices as d on d.id= ce.device_id"+
-		" INNER join command_status cs on cs.id=ce.status_id WHERE d.dev_token =$1", dev_token)
+		" INNER join command_status cs on cs.id=ce.status_id WHERE d.dev_token =$1 and  ce.status_id < 2", dev_token)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -225,7 +225,7 @@ func SetCommandHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("cmd is:%s, status is %s\n", cmd_status.Cmd_id, cmd_status.Cmd_status)
-	rows, err := db.Query("update commands_ex set status_id=$1 where cmd_id=$2 and device_id=$3", &cmd_status.Cmd_status, &cmd_status.Cmd_id, &device_id)
+	rows, err := db.Query("update commands_ex set status_id=$1 where id=$2 and device_id=$3", &cmd_status.Cmd_status, &cmd_status.Cmd_id, &device_id)
 	if err != nil {
 		// If there is any issue with inserting into the database, return a 500 error
 		log.Println("update commands_exerr", err)
