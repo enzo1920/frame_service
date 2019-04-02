@@ -253,9 +253,6 @@ func exe_cmd(cmd string, wg *sync.WaitGroup) {
 
 	//	Run the command
 	cmd_exec.Run()
-
-	//	Output our results
-	//fmt.Printf("Result: %v / %v", out.String(), stderr.String())
 	wg.Done() // Need to signal to waitgroup that this goroutine is done
 }
 
@@ -343,6 +340,10 @@ func main() {
 			fmt.Println("error DiskUsage", err1)
 		}
 
+		err_rem := utils.RemoveOldThanXX(1)
+		if err_rem != nil {
+			fmt.Println("error RemoveOldThanXX", err_rem)
+		}
 		time.Sleep(10 * time.Second)
 	}
 
