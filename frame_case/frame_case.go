@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -49,6 +50,12 @@ const (
 	MB = 1024 * KB
 	GB = 1024 * MB
 )
+
+func check(e error) {
+	if e != nil {
+		log.Println("error ", e)
+	}
+}
 
 func UploadImage(serv_url string, dev_name string, filename string) error {
 
@@ -172,10 +179,29 @@ func Overlay_info(file string) {
 	//wg.Wait()
 }
 
-func Getfilesdir() []string {
+func Montage_img(cmrName string, cmrDate string, cmrHour string) (err error) {
+	startDir := "/mnt/flash/img/" + cmrDate
+	pattern := cmrDate + "_" + cmrHour
+	findedfiles := make([]string, 0)
+	files := Getfilesdir(startDir)
+	for _, filename := range files {
+		if strings.Contains(filename, pattern) {
+			findedfiles = append(findedfiles, startDir+"/"+filename)
+		}
+	}
+	fmt.Println(strings.Join(findedfiles[:], ","))
+
+	montageFile := cmrName + "_mont_" + cmrDate + "_" + cmrHour + ".jpeg"
+	cmdToMontage := "montage?`find ./upload -type f -name *" + cmrDate + "_" + cmrHour + "*.jpeg -not -name \"mini_*\"`?-geometry?640x360+2+2?-background?yellow?" + montageFile
+	fmt.Println("montage:", cmdToMontage)
+	exe_cmd_one(cmdToMontage)
+	return nil
+}
+
+func Getfilesdir(startDir string) []string {
 
 	files_to_upload := make([]string, 0)
-	dirname := path.Join("./upload", string(filepath.Separator))
+	dirname := path.Join(startDir, string(filepath.Separator))
 	d, err := os.Open(dirname)
 	if err != nil {
 		panic(err)
@@ -262,7 +288,7 @@ func exe_cmd_one(cmd string) {
 	parts := strings.Split(cmd, "?")
 	head := parts[0]
 	args := parts[1:len(parts)]
-	//fmt.Println("parts is ", parts)
+	//fmt.Printf("programm is: %v params is: %v ", head, args)
 	cmd_exec := exec.Command(head, args...)
 	//	Sanity check -- capture stdout and stderr:
 	var out bytes.Buffer
@@ -324,7 +350,7 @@ func main() {
 				}
 				wg.Wait()
 		*/
-		files := Getfilesdir()
+		files := Getfilesdir("./upload")
 		for _, filename := range files {
 			//fmt.Println("files in dir is:", filename)
 			//Overlay_fonter(filename)
@@ -344,6 +370,10 @@ func main() {
 		if err_rem != nil {
 			fmt.Println("error RemoveOldThanXX", err_rem)
 		}
+
+		err_mnt := Montage_img("Besder24", "2019-03-17", "22")
+		check(err_mnt)
+
 		time.Sleep(10 * time.Second)
 	}
 
