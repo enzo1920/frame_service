@@ -19,6 +19,7 @@ import (
 	"./models"
 	"./readconfig"
 	"./utils"
+	"github.com/enzo1920/frame_service/frame_case/version"
 )
 
 type Cmd struct {
@@ -106,7 +107,7 @@ func GetUrlFromConfig(cfg readconfig.Configuration, cmd_ret_url string) string {
 }
 
 // func for formating rtsp-stream from config
-func FormatCommands(cfg readconfig.Configuration) []string {
+func FormatCommands(cfg readconfig.Configuration) ([]string, error) {
 
 	t := time.Now().Format("2006-01-02_15-04-05")
 	commands_capture := make([]string, 0)
@@ -146,7 +147,7 @@ func FormatCommands(cfg readconfig.Configuration) []string {
 	for _, cmd := range commands_capture {
 		fmt.Println("cmd:", cmd)
 	}
-	return commands_capture
+	return commands_capture, nil
 }
 
 func Overlay_fonter(file string) {
@@ -310,6 +311,10 @@ func exe_cmd_one(cmd string) {
 
 func main() {
 	//login()
+	log.Printf(
+		"Starting the service...\ncommit: %s, build time: %s, release: %s",
+		version.Commit, version.BuildTime, version.Release,
+	)
 
 	fmt.Println("max parallelism is:", utils.MaxParallelism())
 	readcfg := readconfig.Config_reader("./readconfig/frame_case.conf")
@@ -342,7 +347,8 @@ func main() {
 
 		/*
 			//capture images and send
-				formated_cmds := FormatCommands(readcfg)
+				formated_cmds, err_cmds := FormatCommands(readcfg)
+				check(err_cmds)
 
 				wg := new(sync.WaitGroup)
 				for _, str := range formated_cmds {
