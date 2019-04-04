@@ -179,6 +179,7 @@ func Overlay_info(file string) {
 	//wg.Wait()
 }
 
+/*
 func Montage_img(cmrName string, cmrDate string, cmrHour string) (err error) {
 	startDir := "/mnt/flash/img/" + cmrDate
 	pattern := cmrDate + "_" + cmrHour
@@ -192,11 +193,11 @@ func Montage_img(cmrName string, cmrDate string, cmrHour string) (err error) {
 	fmt.Println(strings.Join(findedfiles[:], ","))
 
 	montageFile := cmrName + "_mont_" + cmrDate + "_" + cmrHour + ".jpeg"
-	cmdToMontage := "montage?`find ./upload -type f -name *" + cmrDate + "_" + cmrHour + "*.jpeg -not -name \"mini_*\"`?-geometry?640x360+2+2?-background?yellow?" + montageFile
+	cmdToMontage := "montage?`find ./upload -type f -name *" + cmrDate + "_" + cmrHour + "*.jpeg -not -name mini_*`?-geometry?640x360+2+2?-background?yellow?" + montageFile
 	fmt.Println("montage:", cmdToMontage)
 	exe_cmd_one(cmdToMontage)
 	return nil
-}
+}*/
 
 func Getfilesdir(startDir string) []string {
 
@@ -288,7 +289,7 @@ func exe_cmd_one(cmd string) {
 	parts := strings.Split(cmd, "?")
 	head := parts[0]
 	args := parts[1:len(parts)]
-	//fmt.Printf("programm is: %v params is: %v ", head, args)
+	fmt.Printf("programm is: %v params is: %v ", head, args)
 	cmd_exec := exec.Command(head, args...)
 	//	Sanity check -- capture stdout and stderr:
 	var out bytes.Buffer
@@ -303,7 +304,7 @@ func exe_cmd_one(cmd string) {
 	}
 
 	//	Output our results
-	//fmt.Printf("Result: %v / %v", out.String(), stderr.String())
+	fmt.Printf("Result: %v / %v", out.String(), stderr.String())
 
 }
 
@@ -371,8 +372,8 @@ func main() {
 			fmt.Println("error RemoveOldThanXX", err_rem)
 		}
 
-		err_mnt := Montage_img("Besder24", "2019-03-17", "22")
-		check(err_mnt)
+		/*err_mnt := Montage_img("Besder24", "2019-03-17", "22")
+		check(err_mnt)*/
 
 		time.Sleep(10 * time.Second)
 	}
