@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -200,33 +199,6 @@ func Montage_img(cmrName string, cmrDate string, cmrHour string) (err error) {
 	return nil
 }*/
 
-func Getfilesdir(startDir string) []string {
-
-	files_to_upload := make([]string, 0)
-	dirname := path.Join(startDir, string(filepath.Separator))
-	d, err := os.Open(dirname)
-	if err != nil {
-		panic(err)
-	}
-	defer d.Close()
-
-	files, err := d.Readdir(-1)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Reading " + dirname)
-
-	for _, file := range files {
-		if file.Mode().IsRegular() {
-			if filepath.Ext(file.Name()) == ".jpeg" {
-				files_to_upload = append(files_to_upload, file.Name())
-			}
-		}
-	}
-	return files_to_upload
-}
-
 func DiskUsage(serv_url string, device_name string, path string) error {
 	fs := syscall.Statfs_t{}
 	err := syscall.Statfs(path, &fs)
@@ -271,7 +243,7 @@ func exe_cmd(cmd string, wg *sync.WaitGroup) {
 	parts := strings.Split(cmd, "?")
 	head := parts[0]
 	args := parts[1:len(parts)]
-	fmt.Println("parts is ", parts)
+	//fmt.Println("parts is ", parts)
 	cmd_exec := exec.Command(head, args...)
 	//	Sanity check -- capture stdout and stderr:
 	var out bytes.Buffer
@@ -290,7 +262,7 @@ func exe_cmd_one(cmd string) {
 	parts := strings.Split(cmd, "?")
 	head := parts[0]
 	args := parts[1:len(parts)]
-	fmt.Printf("programm is: %v params is: %v ", head, args)
+	//fmt.Printf("programm is: %v params is: %v ", head, args)
 	cmd_exec := exec.Command(head, args...)
 	//	Sanity check -- capture stdout and stderr:
 	var out bytes.Buffer
@@ -305,7 +277,7 @@ func exe_cmd_one(cmd string) {
 	}
 
 	//	Output our results
-	fmt.Printf("Result: %v / %v", out.String(), stderr.String())
+	//fmt.Printf("Result: %v / %v", out.String(), stderr.String())
 
 }
 
@@ -357,7 +329,7 @@ func main() {
 				}
 				wg.Wait()
 		*/
-		files := Getfilesdir("./upload")
+		files := utils.Getfilesdir("./upload")
 		for _, filename := range files {
 			//fmt.Println("files in dir is:", filename)
 			//Overlay_fonter(filename)

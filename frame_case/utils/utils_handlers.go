@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -49,4 +50,31 @@ func RemoveOldThanXX(multip int) (err error) {
 
 	}
 	return
+}
+
+func Getfilesdir(startDir string) []string {
+
+	files_to_upload := make([]string, 0)
+	dirname := path.Join(startDir, string(filepath.Separator))
+	d, err := os.Open(dirname)
+	if err != nil {
+		panic(err)
+	}
+	defer d.Close()
+
+	files, err := d.Readdir(-1)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Reading " + dirname)
+
+	for _, file := range files {
+		if file.Mode().IsRegular() {
+			if filepath.Ext(file.Name()) == ".jpeg" {
+				files_to_upload = append(files_to_upload, file.Name())
+			}
+		}
+	}
+	return files_to_upload
 }
