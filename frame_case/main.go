@@ -44,6 +44,11 @@ type Api_Url struct {
 	Url     string
 }
 
+type CameraStatus struct {
+	cmrIp     string `json:"camera_ip"`
+	cmrStatus int    `json:"camera_status"`
+}
+
 const (
 	B  = 1
 	KB = 1024 * B
@@ -147,6 +152,34 @@ func FormatCommands(cfg readconfig.Configuration) ([]string, error) {
 		fmt.Println("cmd:", cmd)
 	}
 	return commands_capture, nil
+}
+
+func PingCmr(cfg readconfig.Configuration) error {
+
+	cmr_status := map[int]*CameraStatus{}
+	for k, i := range cfg.Cameras_block.Cameras_address {
+		cmrs := CameraStatus{}
+		ping_cmd := "ping?-c6?" + i.Value
+		fmt.Println("camer ip is", i.Value)
+		out, _ := exe_cmd_one(ping_cmd)
+		if strings.Contains(out, "100% packet loss") {
+			fmt.Println("Camera DOWN")
+			cmrs.cmrIp = i.Value
+			cmrs.cmrStatus = 1
+		} else {
+			cmrs.cmrIp = i.Value
+			cmrs.cmrStatus = 2
+			fmt.Println("Camera is  ALIVEEE")
+		}
+		cmr_status[k] = &cmrs
+	}
+	jsonCmrStat, err := json.Marshal(cmr_status)
+	if err != nil {
+		//fmt.Println(err)
+		return err
+	}
+	fmt.Println("cameras_state_ json:", jsonCmrStat)
+	return nil
 }
 
 func Overlay_fonter(file string) {
@@ -256,7 +289,7 @@ func exe_cmd(cmd string, wg *sync.WaitGroup) {
 	wg.Done() // Need to signal to waitgroup that this goroutine is done
 }
 
-func exe_cmd_one(cmd string) {
+func exe_cmd_one(cmd string) (string, string) {
 
 	// splitting head => g++ parts => rest of the command
 	parts := strings.Split(cmd, "?")
@@ -273,22 +306,31 @@ func exe_cmd_one(cmd string) {
 	//	Run the command
 	err := cmd_exec.Run()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	//	Output our results
-	//fmt.Printf("Result: %v / %v", out.String(), stderr.String())
+	//fmt.Printf("\nResult: %v / %v", out.String(), stderr.String())
+	return out.String(), stderr.String()
 
 }
 
 func main() {
-	//login()
+	//logging
+	file, err := os.OpenFile("./log/framecase.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	log.SetOutput(file)
+	log.Println("Logging to a file in Go!")
+
 	log.Printf(
 		"Starting the service...\ncommit: %s, build time: %s, release: %s",
 		version.Commit, version.BuildTime, version.Release,
 	)
 
-	fmt.Println("max parallelism is:", utils.MaxParallelism())
+	log.Println("max parallelism is:", utils.MaxParallelism())
 	readcfg := readconfig.Config_reader("./readconfig/frame_case.conf")
 	server_url := "http://" + readcfg.Connection.Host + ":" + strconv.Itoa(readcfg.Connection.Port)
 	device := readcfg.Connection.Devicename
@@ -301,19 +343,20 @@ func main() {
 	fmt.Println("api urls:", api_urls)
 	fmt.Println("api token:", token)
 	fmt.Println("api ret url:", url_command)
+	PingCmr(readcfg)
 	// while true loop
 	for {
-		fmt.Println("Starting connect to server")
+		log.Println("Starting connect to server")
 		//получаем и сразу выставляем статус
 		gcmds, err := models.GetCommands(server_url+url_command, device)
 		if err != nil {
-			fmt.Println("error GetCommands", err)
+			log.Println("error GetCommands", err)
 		}
 		for _, v := range gcmds {
 			fmt.Println(v.Cmd_id, v.Cmd_name)
 			err_set := models.SetCommandStatus(server_url+url_setcmd, v.Cmd_id, 2)
 			if err_set != nil {
-				fmt.Println("error Set command", err_set)
+				log.Println("error Set command", err_set)
 			}
 		}
 
