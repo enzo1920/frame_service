@@ -65,7 +65,7 @@ void sendPOST() //client function to send/receive GET request data.
 
    if(str_temp.length()>0){
 
-       if (client.connect("{ip}",8080)) { // REPLACE WITH YOUR SERVER ADDRESS
+       if (client.connect("framecase.tula.su",8080)) { // REPLACE WITH YOUR SERVER ADDRESS
           Serial.println("connected");
           Serial.println("=================>");
           client.println("POST /v1/upload/temp/?token={token} HTTP/1.1"); 
