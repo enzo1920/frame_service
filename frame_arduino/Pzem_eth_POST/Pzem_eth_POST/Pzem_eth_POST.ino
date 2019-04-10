@@ -8,11 +8,12 @@ IPAddress pzip(192,168,1,1);
 
 byte mac[] = { 0x00, 0xAA, 0xBB, 0xCC, 0xDE, 0x01 }; // RESERVED MAC ADDRESS
 EthernetClient client;
+char serverName[] = "framecase.tula.su";
 
 
 // **** ETHERNET SETTING ****
 //byte mac[] = { 0x90, 0xA2, 0xDA, 0x0D, 0x78, 0xEE  };                                       
-IPAddress ip(10, 10, 10, 244); 
+IPAddress ip(10, 10, 10, 243); 
 IPAddress mydns(10,10,10,1);
 IPAddress mygw(10,10,10,1);
 IPAddress subnet(255,255,255,0);
@@ -52,8 +53,9 @@ void sendPOST() //client function to send/receive GET request data.
     Serial.println(current_pzem);
 
    if(current_pzem.length()>=0){
-       if (client.connect("framecase.tula.su",8080)) { // REPLACE WITH YOUR SERVER ADDRESS
+       if (client.connect(serverName,8080)>=0) { // REPLACE WITH YOUR SERVER ADDRESS
           Serial.println("connected");
+          Serial.println(client.connect(serverName,8080));
           Serial.println("=================>");
           client.println("POST /v1/upload/voltage/?token={token} HTTP/1.1"); 
           client.println("Host: framecase.tula.su"); // SERVER ADDRESS HERE TOO
