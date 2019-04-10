@@ -68,7 +68,7 @@ void sendPOST() //client function to send/receive GET request data.
        if (client.connect("{ip}",8080)) { // REPLACE WITH YOUR SERVER ADDRESS
           Serial.println("connected");
           Serial.println("=================>");
-          client.println("POST /v1/uploadtemp/?token={token} HTTP/1.1"); 
+          client.println("POST /v1/upload/temp/?token={token} HTTP/1.1"); 
           client.println("Host: {host}"); // SERVER ADDRESS HERE TOO
           client.println("Content-Type: text/plain;");
           client.print("Content-Length: "); 

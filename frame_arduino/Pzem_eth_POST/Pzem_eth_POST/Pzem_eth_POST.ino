@@ -49,8 +49,9 @@ void loop(){
 void sendPOST() //client function to send/receive GET request data.
 {
     String current_pzem = Pzem();
+    Serial.println(current_pzem);
 
-   if(current_pzem.length()>0){
+   if(current_pzem.length()>=0){
        if (client.connect("188.227.18.141",8080)) { // REPLACE WITH YOUR SERVER ADDRESS
           Serial.println("connected");
           Serial.println("=================>");
@@ -66,34 +67,30 @@ void sendPOST() //client function to send/receive GET request data.
           
           } 
        else {
-          Serial.println("connection failed or temp is not enough"); //error message if no client connect
-          Serial.println();
+          Serial.println("connection failed"); //error message if no client connect
        }
+        //Serial.println("len str voltage"); //error message if no client connect
         delay(100);
    }
 
 }
 
 String Pzem(){
-  String currency;// current voltage amper and power
   String volt;
   int ivoltage;
   float v = pzem.voltage(pzip);
   //Serial.print(v);Serial.print("V; ");
   if (v <= 0.0){
-     currency="volt:0.00";
+     volt="0.00";
   } 
   else {
     ivoltage = v*10;
     volt = String(ivoltage/10, DEC);
     volt += ".";
     volt += String(ivoltage%10, DEC);
-    currency = "volt:"+volt;
     //Serial.print(currency);
     //Serial.println();
   }
-  Serial.print(currency);
-  Serial.println();
-  return currency;
+  return volt;
  }
 

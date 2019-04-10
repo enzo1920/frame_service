@@ -162,6 +162,41 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 
 }*/
 
+func UploadVoltageHandler(w http.ResponseWriter, r *http.Request) {
+	keys, ok := r.URL.Query()["token"]
+
+	if !ok || len(keys[0]) < 1 {
+		log.Println("Url Param 'token' is missing")
+		return
+	}
+	token := string(keys[0])
+
+	device_id := 0
+	err1 := db.QueryRow("select id from devices where dev_token=$1", token).Scan(&device_id)
+	if err1 != nil {
+		// If there is an issue with the database, return a 500 error
+		fmt.Println("--->", err1)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	log.Println("dev_id upload temp:", device_id)
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Println(err)
+
+	}
+	bodyString := strconv.ParseFloat(string(body), 64)
+	log.Printf("volt is:%s, token is %s\n", bodyString, token)
+	rows, err := db.Query("insert into  volt_stat values (DEFAULT,$1,$2, CURRENT_TIMESTAMP)", &device_id, &bodyString)
+	if err != nil {
+		// If there is any issue with inserting into the database, return a 500 error
+		log.Println(" insert volt_stat err", err)
+		//w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+}
+
 func UploadTempHandler(w http.ResponseWriter, r *http.Request) {
 	keys, ok := r.URL.Query()["token"]
 
