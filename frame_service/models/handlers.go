@@ -185,9 +185,9 @@ func UploadVoltageHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 
 	}
-	bodyString := strconv.ParseFloat(string(body), 64)
-	log.Printf("volt is:%s, token is %s\n", bodyString, token)
-	rows, err := db.Query("insert into  volt_stat values (DEFAULT,$1,$2, CURRENT_TIMESTAMP)", &device_id, &bodyString)
+	volatge, _ := strconv.ParseFloat(string(body), 64)
+	log.Printf("volt is:%v, token is %s\n", volatge, token)
+	rows, err := db.Query("insert into  volt_stat values (DEFAULT,$1,$2, CURRENT_TIMESTAMP)", &device_id, &volatge)
 	if err != nil {
 		// If there is any issue with inserting into the database, return a 500 error
 		log.Println(" insert volt_stat err", err)
