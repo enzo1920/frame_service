@@ -316,7 +316,12 @@ func exe_cmd_one(cmd string) (string, string) {
 }
 
 func main() {
+
 	//logging
+	log_dir := "./log"
+	if _, err := os.Stat(log_dir); os.IsNotExist(err) {
+		os.Mkdir(log_dir, 0644)
+	}
 	file, err := os.OpenFile("./log/framecase.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatal(err)

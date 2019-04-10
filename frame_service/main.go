@@ -53,13 +53,13 @@ func AddV2Routes(r *mux.Router) {
 // AddRoutes takes a router or subrouter and adds all the latest
 // routes to it
 func AddRoutes(r *mux.Router) {
-	r.HandleFunc("/getcommand/", models.GetCommands).Methods("GET")
-	r.HandleFunc("/getcams", models.Cam_adr_get).Methods("GET")
-	r.HandleFunc("/upload/", models.UploadHandler).Methods("POST")
+	r.HandleFunc("/get/command/", models.GetCommands).Methods("GET")
+	r.HandleFunc("/get/cams/", models.Cam_adr_get).Methods("GET")
+	r.HandleFunc("/upload/image/", models.UploadHandler).Methods("POST")
 	r.HandleFunc("/upload/temp/", models.UploadTempHandler).Methods("POST")
 	r.HandleFunc("/upload/voltage/", models.UploadVoltageHandler).Methods("POST")
-	r.HandleFunc("/devvolumeinfo/", models.DiskStateHandler).Methods("POST")
-	r.HandleFunc("/setcmd/", models.SetCommandHandler).Methods("POST")
+	r.HandleFunc("/upload/volumeinfo/", models.DiskStateHandler).Methods("POST")
+	r.HandleFunc("/set/command/", models.SetCommandHandler).Methods("POST")
 	//r.HandleFunc("/ip", models.GetIP).Methods("GET")
 	//r.HandleFunc("/get-token", models.GetTokenHandler).Methods("GET")
 }
@@ -67,13 +67,18 @@ func AddRoutes(r *mux.Router) {
 func main() {
 
 	//logging
+	log_dir := "./log"
+	if _, err := os.Stat(log_dir); os.IsNotExist(err) {
+		os.Mkdir(log_dir, 0644)
+	}
+
 	file, err := os.OpenFile("./log/frame_service.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file.Close()
 	log.SetOutput(file)
-	log.Println("Logging to a file in Go!")
+	log.Println("Logging to a file frameservice!")
 
 	// read config
 	readcfg := readconfig.Config_reader("./readconfig/frame_conf.conf")
