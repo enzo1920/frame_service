@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"path"
 	"strconv"
 	"strings"
@@ -42,11 +41,6 @@ type Ip_stream struct {
 type Api_Url struct {
 	Command string
 	Url     string
-}
-
-type CameraStatus struct {
-	cmrIp     string `json:"camera_ip"`
-	cmrStatus int    `json:"camera_status"`
 }
 
 const (
@@ -154,40 +148,12 @@ func FormatCommands(cfg readconfig.Configuration) ([]string, error) {
 	return commands_capture, nil
 }
 
-func PingCmr(cfg readconfig.Configuration) error {
-
-	cmr_status := map[int]*CameraStatus{}
-	for k, i := range cfg.Cameras_block.Cameras_address {
-		cmrs := CameraStatus{}
-		ping_cmd := "ping?-c6?" + i.Value
-		fmt.Println("camer ip is", i.Value)
-		out, _ := exe_cmd_one(ping_cmd)
-		if strings.Contains(out, "100% packet loss") {
-			fmt.Println("Camera DOWN")
-			cmrs.cmrIp = i.Value
-			cmrs.cmrStatus = 1
-		} else {
-			cmrs.cmrIp = i.Value
-			cmrs.cmrStatus = 2
-			fmt.Println("Camera is  ALIVEEE")
-		}
-		cmr_status[k] = &cmrs
-	}
-	jsonCmrStat, err := json.Marshal(cmr_status)
-	if err != nil {
-		//fmt.Println(err)
-		return err
-	}
-	fmt.Println("cameras_state_ json:", jsonCmrStat)
-	return nil
-}
-
 func Overlay_fonter(file string) {
 	file_path := path.Join("./upload", file)
 	compose := "composite?-gravity center ?/home/src_img/fonter.png ?" + file_path + " ?" + file_path
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
-	go exe_cmd(compose, wg)
+	go utils.ExecCmd(compose, wg)
 	wg.Wait()
 }
 
@@ -207,7 +173,7 @@ func Overlay_info(file string) {
 	for _, str := range convert_commands {
 
 		//fmt.Println("convert cmd-----------------", str)
-		exe_cmd_one(str)
+		utils.ExecCmdone(str)
 	}
 	//wg.Wait()
 }
@@ -270,51 +236,6 @@ func DiskUsage(serv_url string, device_name string, path string) error {
 	return nil
 }
 
-func exe_cmd(cmd string, wg *sync.WaitGroup) {
-
-	// splitting head => g++ parts => rest of the command
-	parts := strings.Split(cmd, "?")
-	head := parts[0]
-	args := parts[1:len(parts)]
-	//fmt.Println("parts is ", parts)
-	cmd_exec := exec.Command(head, args...)
-	//	Sanity check -- capture stdout and stderr:
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd_exec.Stdout = &out
-	cmd_exec.Stderr = &stderr
-
-	//	Run the command
-	cmd_exec.Run()
-	wg.Done() // Need to signal to waitgroup that this goroutine is done
-}
-
-func exe_cmd_one(cmd string) (string, string) {
-
-	// splitting head => g++ parts => rest of the command
-	parts := strings.Split(cmd, "?")
-	head := parts[0]
-	args := parts[1:len(parts)]
-	//fmt.Printf("programm is: %v params is: %v ", head, args)
-	cmd_exec := exec.Command(head, args...)
-	//	Sanity check -- capture stdout and stderr:
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd_exec.Stdout = &out
-	cmd_exec.Stderr = &stderr
-
-	//	Run the command
-	err := cmd_exec.Run()
-	if err != nil {
-		log.Println(err)
-	}
-
-	//	Output our results
-	//fmt.Printf("\nResult: %v / %v", out.String(), stderr.String())
-	return out.String(), stderr.String()
-
-}
-
 func main() {
 
 	//logging
@@ -348,7 +269,8 @@ func main() {
 	fmt.Println("api urls:", api_urls)
 	fmt.Println("api token:", token)
 	fmt.Println("api ret url:", url_command)
-	PingCmr(readcfg)
+	//utils.PingCmr(readcfg)
+	utils.PingCmr(readcfg)
 	// while true loop
 	for {
 		log.Println("Starting connect to server")
@@ -373,7 +295,7 @@ func main() {
 				wg := new(sync.WaitGroup)
 				for _, str := range formated_cmds {
 					wg.Add(1)
-					go exe_cmd(str, wg)
+					go utils.ExecCmd(str, wg)
 				}
 				wg.Wait()
 		*/
