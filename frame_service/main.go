@@ -55,6 +55,7 @@ func AddV2Routes(r *mux.Router) {
 func AddRoutes(r *mux.Router) {
 	r.HandleFunc("/get/command/", models.GetCommands).Methods("GET")
 	r.HandleFunc("/get/cams/", models.Cam_adr_get).Methods("GET")
+	r.HandleFunc("/set/cams/", models.SetCamState).Methods("POST")
 	r.HandleFunc("/upload/image/", models.UploadHandler).Methods("POST")
 	r.HandleFunc("/upload/temp/", models.UploadTempHandler).Methods("POST")
 	r.HandleFunc("/upload/voltage/", models.UploadVoltageHandler).Methods("POST")

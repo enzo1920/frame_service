@@ -266,11 +266,13 @@ func main() {
 	url_command := GetUrlFromConfig(readcfg, "getcommand")
 	url_voluminfo := GetUrlFromConfig(readcfg, "volumeinfo")
 	url_setcmd := GetUrlFromConfig(readcfg, "setcmd")
+	url_setcams := GetUrlFromConfig(readcfg, "setcams")
 	fmt.Println("api urls:", api_urls)
 	fmt.Println("api token:", token)
 	fmt.Println("api ret url:", url_command)
 	//utils.PingCmr(readcfg)
-	utils.PingCmr(readcfg)
+	utils.PingCmr(server_url+url_setcams, readcfg)
+	fmt.Println(url_setcams)
 	// while true loop
 	for {
 		log.Println("Starting connect to server")

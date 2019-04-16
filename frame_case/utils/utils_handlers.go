@@ -3,9 +3,11 @@ package utils
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -17,45 +19,9 @@ import (
 	"../readconfig"
 )
 
-type CameraStatus struct {
-	cmrIp     string `json:"camera_ip"`
-	cmrStatus int    `json:"camera_status"`
-}
-
-type Worker struct {
-	Command string
-	Output  chan string
-	Outerr  chan string
-}
-
-func (cmd *Worker) Run() {
-
-	parts := strings.Split(cmd.Command, "?")
-	head := parts[0]
-	args := parts[1:len(parts)]
-	fmt.Printf("programm is: %v params is: %v \n", head, args)
-
-	cmdExec, err := exec.Command(head, args...).Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-	/*
-		var out bytes.Buffer
-		var stderr bytes.Buffer
-		cmdExec.Stdout = &out
-		cmdExec.Stderr = &stderr
-		fmt.Printf("\nResult: %v / %v", out.String(), stderr.String())*/
-
-	cmd.Output <- string(cmdExec)
-	cmd.Outerr <- string("111")
-}
-
-func Collect(c chan string, e chan string) {
-	for {
-		msg := <-c
-		err := <-e
-		fmt.Printf("The command result is %v error is %v \n", msg, err)
-	}
+type CamState struct {
+	CamIp    string `json:"cam_ip"`
+	CamState int    `json:"cam_state"`
 }
 
 func TokenGenerator() string {
@@ -127,63 +93,61 @@ func Getfilesdir(startDir string) []string {
 	return files_to_upload
 }
 
-func PingCmr(cfg readconfig.Configuration) error {
+func PingCmr(serv_url string, cfg readconfig.Configuration) error {
 	cmd := "ping"
 
 	//Common Channel for the goroutines
-	tasks := make(chan *exec.Cmd, 64)
-
+	//tasks := make(chan *exec.Cmd, 64)
+	//tasks := make(chan *map[string]int)
 	//Spawning  goroutines
-	var wg sync.WaitGroup
-	for _, i := range cfg.Cameras_block.Cameras_address {
-		wg.Add(1)
-		go Run(i.Value, tasks, &wg)
-	}
-
-	//cmr_status := map[int]*CameraStatus{}
+	//var wg sync.WaitGroup
+	//for _, i := range cfg.Cameras_block.Cameras_address {
+	//	wg.Add(1)
+	//	go RunPing(i.Value, tasks, &wg)
+	//}
 
 	fmt.Println("cameras count is ", len(cfg.Cameras_block.Cameras_address))
 	//Generate Tasks
+	cmr_status := []*CamState{}
 	for _, i := range cfg.Cameras_block.Cameras_address {
-		tasks <- exec.Command(cmd, "-c3", i.Value)
-	}
-	close(tasks)
+		cstate := &CamState{}
+		out, err := exec.Command(cmd, "-c3", i.Value).Output()
+		cstate.CamIp = i.Value
+		if err != nil {
+			log.Printf("can't get stdout:%v", err)
+		}
+		if strings.Contains(string(out), "100% packet loss") {
 
-	// wait for the workers to finish
-	wg.Wait()
+			cstate.CamState = 1 //1-down
+		} else {
+			cstate.CamState = 2 //2-alive
+		}
+		cmr_status = append(cmr_status, cstate)
+
+	}
+	jsonCmrStat, err := json.Marshal(cmr_status)
+	if err != nil {
+		fmt.Println(err)
+		//return err
+	}
+	fmt.Println("cameras_state_json:", string(jsonCmrStat))
+
+	req, err := http.NewRequest("POST", serv_url, bytes.NewBuffer(jsonCmrStat))
+	req.Header.Set("X-Custom-Header", "cam_state")
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("response Status:", resp.Status)
+	fmt.Println("response Headers:", resp.Header)
 
 	fmt.Printf("\n=========ping done=====>>>>\n")
-
-	/*
-
-		for k, i := range cfg.Cameras_block.Cameras_address {
-			cmrs := CameraStatus{}
-			ping_cmd := "ping?-c6?" + i.Value
-			fmt.Println("Camera ip is", i.Value)
-
-			if strings.Contains(out, "100% packet loss") {
-				fmt.Println("Camera DOWN")
-				cmrs.cmrIp = i.Value
-				cmrs.cmrStatus = 1
-			} else {
-				cmrs.cmrIp = i.Value
-				cmrs.cmrStatus = 2
-				fmt.Println("Camera is  ALIVEEE")
-			}
-			cmr_status[k] = &cmrs
-		}
-
-		//test print
-		for _, v := range cmr_status {
-			fmt.Printf("\nCamera %s  state is %d", v.cmrIp, v.cmrStatus)
-		}
-
-		jsonCmrStat, err := json.Marshal(cmr_status)
-		if err != nil {
-			//fmt.Println(err)
-			return err
-		}
-		fmt.Println("cameras_state_ json:", string(jsonCmrStat))*/
 	return nil
 }
 
@@ -233,25 +197,33 @@ func ExecCmdone(cmd string) (string, string) {
 
 }
 
-func Run(camera string, tasks chan *exec.Cmd, w *sync.WaitGroup) {
+func RunPing(camera_ip string, tasks chan *exec.Cmd, w *sync.WaitGroup) {
 	defer w.Done()
 	var (
 		out []byte
 		err error
 	)
+	cmr_status := map[string]int{}
 	for cmd := range tasks { // this will exit the loop when the channel closes
+
+		//cmrs := CameraStatus{} //struct for export to server
+
 		out, err = cmd.Output()
 		if err != nil {
 			log.Printf("can't get stdout:%v", err)
 		}
-		//fmt.Printf("goroutine %d command output:%s", num, string(out))
 		if strings.Contains(string(out), "100% packet loss") {
-			fmt.Printf("\nHost DOWN  %s", camera)
-
+			cmr_status[camera_ip] = 1 //1-down
 		} else {
-
-			fmt.Printf("\nHost is  ALIVEEE  %s", camera)
+			cmr_status[camera_ip] = 2 //2-alive
 		}
 
 	}
+	jsonCmrStat, err := json.Marshal(cmr_status)
+	if err != nil {
+		fmt.Println(err)
+		//return err
+	}
+	fmt.Println("cameras_state_json:", string(jsonCmrStat))
+
 }

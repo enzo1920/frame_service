@@ -31,6 +31,11 @@ type Credentials struct {
 	Username string `json:"username", db:"username"`
 }
 
+type CamState struct {
+	CamIp    string `json:"cam_ip"`
+	CamState int    `json:"cam_state"`
+}
+
 type DiskStatus struct {
 	Device    string `json:"device"`
 	Disk_part string `json:"disk_part"`
@@ -52,6 +57,43 @@ type Set_cmds struct {
 func FloatToString(input_num float64) string {
 	// to convert a float number to a string
 	return strconv.FormatFloat(input_num, 'f', 6, 64)
+}
+
+func SetCamState(w http.ResponseWriter, r *http.Request) {
+	keys, ok := r.URL.Query()["token"]
+
+	if !ok || len(keys[0]) < 1 {
+		log.Println("Url Param 'token' is missing")
+		return
+	}
+	token := string(keys[0])
+	device_name := "TARS"
+	device_id := 0
+	err1 := db.QueryRow("select id, device_name from devices where dev_token=$1", token).Scan(&device_id, &device_name)
+	if err1 != nil {
+		// If there is an issue with the database, return a 500 error
+		fmt.Println("--->", err1)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	body, _ := ioutil.ReadAll(r.Body)
+	var camstate []*CamState
+	/*err := json.NewDecoder(r.Body).Decode(camstate)
+	if err != nil {
+		fmt.Println("err to decode ", err)
+		// If there is something wrong with the request body, return a 400 status
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}*/
+
+	json.Unmarshal(body, &camstate)
+	for _, v := range camstate {
+		fmt.Println(v.CamIp, v.CamState)
+	}
+
+
+	w.WriteHeader(http.StatusOK)
+
 }
 
 func Cam_adr_get(w http.ResponseWriter, r *http.Request) {
