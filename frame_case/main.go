@@ -237,6 +237,8 @@ func DiskUsage(serv_url string, device_name string, path string) error {
 }
 
 func main() {
+	//Generate new token
+	//fmt.Println("new token is: ", utils.TokenGenerator())
 
 	//logging
 	log_dir := "./log"
@@ -257,6 +259,7 @@ func main() {
 	)
 
 	log.Println("max parallelism is:", utils.MaxParallelism())
+
 	readcfg := readconfig.Config_reader("./readconfig/frame_case.conf")
 	server_url := "http://" + readcfg.Connection.Host + ":" + strconv.Itoa(readcfg.Connection.Port)
 	device := readcfg.Connection.Devicename

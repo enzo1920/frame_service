@@ -103,7 +103,7 @@ func SetCamState(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func Cam_adr_get(w http.ResponseWriter, r *http.Request) {
+func GetCameraState(w http.ResponseWriter, r *http.Request) {
 
 	cam_type := 0
 	rows, err := db.Query("SELECT ip_addr FROM cameras_addr WHERE cmr_type=$1", cam_type)
@@ -192,6 +192,36 @@ func GetCommands(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(sendcommans)
+
+}
+
+//reset relay handler
+func GetResetRelay(w http.ResponseWriter, r *http.Request) {
+
+	keys, ok := r.URL.Query()["token"]
+
+	if !ok || len(keys[0]) < 1 {
+		log.Println("Url Param 'device' is missing")
+		return
+	}
+
+	// Query()["key"] will return an array of items,
+	// we only want the single item.
+	dev_token := string(keys[0])
+
+	relayEnable := 0
+	err1 := db.QueryRow("select relay_enbl from dev_relay dr inner join devices d on dr.dev_id=d.id where d.dev_token=$1", dev_token).Scan(&relayEnable)
+	if err1 != nil {
+		// If there is an issue with the database, return a 500 error
+		log.Println("GetResetRelay err", err1)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	//w.Write(relayEnable)
+	w.Write([]byte(fmt.Sprintf(string(relayEnable))))
 
 }
 

@@ -95,17 +95,6 @@ func Getfilesdir(startDir string) []string {
 
 func PingCmr(serv_url string, cfg readconfig.Configuration) error {
 	cmd := "ping"
-
-	//Common Channel for the goroutines
-	//tasks := make(chan *exec.Cmd, 64)
-	//tasks := make(chan *map[string]int)
-	//Spawning  goroutines
-	//var wg sync.WaitGroup
-	//for _, i := range cfg.Cameras_block.Cameras_address {
-	//	wg.Add(1)
-	//	go RunPing(i.Value, tasks, &wg)
-	//}
-
 	fmt.Println("cameras count is ", len(cfg.Cameras_block.Cameras_address))
 	//Generate Tasks
 	cmr_status := []*CamState{}
