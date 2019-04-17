@@ -89,11 +89,18 @@ func SetCamState(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(body, &camstate)
 	for _, v := range camstate {
 		fmt.Println(v.CamIp, v.CamState)
+
+		rows, err := db.Query("update cameras_addr set cmr_status=$1 where ip_addr=$2", v.CamState, v.CamIp)
+		if err != nil {
+			// If there is any issue with inserting into the database, return a 500 error
+			log.Println("update cameras_addr", err)
+			//w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
 	}
-
-
 	w.WriteHeader(http.StatusOK)
-
 }
 
 func Cam_adr_get(w http.ResponseWriter, r *http.Request) {
