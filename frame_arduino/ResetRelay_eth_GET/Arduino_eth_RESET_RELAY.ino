@@ -7,7 +7,7 @@
 byte mac[] = { 0x00, 0xAA, 0xBB, 0xCC, 0xEE, 0x01 }
 
 EthernetClient client;
-char server[] = "framecase.tula.su"; // имя вашего сервера
+char server[] = "server"; // server
 int buff=0;
 
 // Relay state and pin
@@ -15,7 +15,7 @@ String relay1State = "Off";
 const int relay = 7;
 
 
-IPAddress ip(10, 10, 10, 244); 
+IPAddress ip(10, 10, 10, 227); 
 IPAddress mydns(10,10,10,1);
 IPAddress mygw(10,10,10,1);
 IPAddress subnet(255,255,255,0);
@@ -49,10 +49,10 @@ void loop()
 
 	if (client.connect(server, 8080)) 
 	{
-		client.print("GET /v1/get/relay/reset/?token=5d6f3ecb1cb3d69b HTTP/1.1");
-    client.println("Host: reseter"); // SERVER ADDRESS HERE TOO
-    client.println("Content-Type: text/plain;");
-    client.print("Content-Length: "); 
+		client.print("GET /v1/get/relay/reset/?token={token} HTTP/1.1");
+		client.println("Host: reseter"); // SERVER ADDRESS HERE TOO
+		client.println("Content-Type: text/plain;");
+		client.print("Content-Length: "); 
 		client.println("Connection: close");
 		client.println();
 		client.println();
