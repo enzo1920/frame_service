@@ -59,18 +59,18 @@ void loop()
 		delay(200);
 		while (client.available())
 		{
-		   char c = client.read();
-		   if (c=='1'){
-			  buff=1;
-		   }
-		   if (c=='0'){
-			  buff=0;
-		   }
-		} 
-
+			char c = client.read();
+			if (c=='1'){
+				buff=1;
+			}
+			if (c=='0'){
+				buff=0;
+			}
+		}
 		client.stop();
 		client.flush();
-		delay(100); 
+		//2 min = 2 min * 60 sec/min * 1000 msec/sec = 120,000msec
+		delay(120000); 
 	}
 	else {
 		client.stop();
@@ -80,18 +80,17 @@ void loop()
 //work with relay
 	if ( buff==1)
 	{
-     digitalWrite(relay, LOW);
-     relay1State = "On";
-     
-     delay(7000);
-		 digitalWrite(relay, HIGH);
-     relay1State = "Off";
-     
+		digitalWrite(relay, LOW);
+		relay1State = "On";
+
+		delay(7000);
+		digitalWrite(relay, HIGH);
+		relay1State = "Off";
 	}
 	else
 	{
-		 digitalWrite(relay, HIGH);
-     relay1State = "Off";
+		digitalWrite(relay, HIGH);
+		relay1State = "Off";
 	}
 	delay(500);
 }
