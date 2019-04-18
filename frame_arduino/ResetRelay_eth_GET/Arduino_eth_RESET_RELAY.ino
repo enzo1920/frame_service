@@ -22,24 +22,24 @@ IPAddress subnet(255,255,255,0);
 
 void setup()
 {
-  Serial.begin(9600);
-  if (!Ethernet.begin(mac) ) {
-    Serial.println("Failed to configure Ethernet using DHCP"); 
-    Ethernet.begin(mac, ip,mydns,mygw,subnet);
-  }
-  //Ethernet.begin(mac, ip);
-  Serial.print("ip-");
-  Serial.println( Ethernet.localIP());
-  Serial.print("Subnet mask-");
-  Serial.println( Ethernet.subnetMask());
-  Serial.print("Gateway-");
-  Serial.println( Ethernet.gatewayIP());
-  Serial.print("DNS-");
-  Serial.println( Ethernet.dnsServerIP());
-  
-  // Relay module prepared 
-  pinMode(relay, OUTPUT);
-  digitalWrite(relay, HIGH);
+	Serial.begin(9600);
+	if (!Ethernet.begin(mac)) {
+		Serial.println("Failed to configure Ethernet using DHCP"); 
+		Ethernet.begin(mac, ip, mydns, mygw, subnet);
+	}
+	//Ethernet.begin(mac, ip);
+	Serial.print("ip-");
+	Serial.println( Ethernet.localIP());
+	Serial.print("Subnet mask-");
+	Serial.println( Ethernet.subnetMask());
+	Serial.print("Gateway-");
+	Serial.println( Ethernet.gatewayIP());
+	Serial.print("DNS-");
+	Serial.println( Ethernet.dnsServerIP());
+
+	// Relay module prepared 
+	pinMode(relay, OUTPUT);
+	digitalWrite(relay, HIGH);
 }
 
 void loop()
@@ -54,7 +54,6 @@ void loop()
 		client.println("Content-Type: text/plain;");
 		client.print("Content-Length: "); 
 		client.println("Connection: close");
-		client.println();
 		client.println();
 		delay(200);
 		while (client.available())
@@ -86,6 +85,7 @@ void loop()
 		delay(7000);
 		digitalWrite(relay, HIGH);
 		relay1State = "Off";
+		//тут нужно добавить post чтобы обновлять состояние после reset на сервере
 	}
 	else
 	{
