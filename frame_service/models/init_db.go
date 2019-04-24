@@ -17,11 +17,11 @@ func InitDB(cfg frame.Configuration) {
 		"password=%s dbname=%s sslmode=disable", cfg.Database.Host, cfg.Database.Port, cfg.Database.DBuser, cfg.Database.Password, cfg.Database.DBname)
 	db, err = sql.Open("postgres", psqlInfo)
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
 	}
 
 	if err = db.Ping(); err != nil {
-		log.Panic(err)
+		log.Println(err)
 	}
 	log.Println("Successfully connected!")
 }

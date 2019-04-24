@@ -225,12 +225,10 @@ func GetResetRelay(w http.ResponseWriter, r *http.Request) {
 
 }
 
-/*
-func DownloadHandler(w http.ResponseWriter, r *http.Request) {
+func GetImg(w http.ResponseWriter, r *http.Request) {
 	//from request get datime and device name
 	//return urls of files to web interface
-
-	file, err := ioutil.ReadFile("upload/img/orel.jpg")
+	file, err := ioutil.ReadFile("uploaded/Arduino_Switch03.png")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -238,8 +236,7 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "image/png")
 	w.Write(file)
 
-
-}*/
+}
 
 func UploadVoltageHandler(w http.ResponseWriter, r *http.Request) {
 	keys, ok := r.URL.Query()["token"]
