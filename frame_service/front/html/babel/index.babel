@@ -1,0 +1,151 @@
+var destination = document.querySelector("#container");
+
+var { Router,
+      Route,
+      IndexRoute,
+      IndexLink,
+      Link } = ReactRouter;
+
+var STUFFITEMS = [
+    { id: 1, title: "Nulla pulvinar diam", visible: false },
+    { id: 2, title: "Facilisis bibendum", visible: false },
+    { id: 3, title: "Vestibulum vulputate", visible: false },
+    { id: 4, title: "Eget erat", visible: false },
+    { id: 5, title: "Id porttitor", visible: false },
+    { id: 6, title: "Lorem Ipsum", visible: true }
+];
+
+var App = React.createClass({  
+  render: function() {
+    return (
+      <div>
+        <h1>Simple SPA</h1>
+        <ul className="header">
+          <li><IndexLink to="/" activeClassName="active">Home</IndexLink></li>
+          <li><Link to="/stuffs" activeClassName="active">Stuffs</Link></li>
+          <li><Link to="/faq" activeClassName="active">FAQ</Link></li>
+        </ul>
+        <div className="content">
+          {this.props.children}
+        </div>
+      </div>
+    )
+  }
+});
+
+var Home = React.createClass({
+  render: function() {
+      return (
+        <div>
+          <h2>HELLO</h2>
+          <p>Cras facilisis urna ornare ex volutpat, et
+          convallis erat elementum. Ut aliquam, ipsum vitae
+          gravida suscipit, metus dui bibendum est, eget rhoncus nibh
+          metus nec massa. Maecenas hendrerit laoreet augue
+          nec molestie. Cum sociis natoque penatibus et magnis
+          dis parturient montes, nascetur ridiculus mus.</p>
+  
+          <p>Duis a turpis sed lacus dapibus elementum sed eu lectus.</p>
+          
+          <p>A wrong link: <Link to="ding">Yes please</Link>.</p>
+        </div>
+      );
+    }
+});
+
+var Faq = React.createClass({
+  render: function() {
+      return (
+        <div>
+          <h2>GOT QUESTIONS?</h2>
+          <p>The easiest thing to check the <a href="https://github.com/ReactTraining/react-router">docs</a>.
+          </p>
+        </div>
+      );
+    }
+});
+ 
+var Stuffs = React.createClass({
+  _renderStuffs: function() {
+    return (
+        <div>
+          <h2>STUFFS</h2>
+          <p>Mauris sem velit, vehicula eget sodales vitae,
+          rhoncus eget sapien:</p>
+          <ol>
+            {this.state.stuffs.map(stuff => (
+              <li><Link to={`/stuffs/${stuff.id}`} activeClassName="active">{stuff.title}</Link></li>
+            ))}
+          </ol>
+        </div>
+    );
+  },
+
+  getInitialState: function() {
+    return {
+      stuffs: STUFFITEMS
+    };
+  },
+
+  render: function() {
+      return (
+        <div>
+          { this.props.params.stuffId ? this.props.children : this._renderStuffs() }
+        </div>
+      );
+    }
+});
+
+var Stuff = React.createClass({
+  _findStuffById: function(id) {
+    return STUFFITEMS.filter((stuffItem) => stuffItem.id == id )[0];
+  },
+  
+  getInitialState: function() {
+    return {
+      stuffs: null
+    };
+  },
+  
+  componentWillMount: function() {
+    this.setState({
+      stuff: this._findStuffById(this.props.params.stuffId)
+    })
+  },
+  
+  render: function() {
+      const stuff = this.state.stuff;
+      return (
+        <div>
+          <h2>{stuff.title}</h2>
+          <p>My ID is {stuff.id}</p>
+          <p><Link to="/stuffs">Return to Stuffs</Link></p>
+        </div>
+      );
+    }
+});
+
+var NoMatch = React.createClass({
+  render: function() {
+    return (
+      <div>
+        <h2>No route matches this URL.</h2>
+        <p>Return <Link to="/">home</Link></p>
+      </div>
+    );
+  }
+});
+
+ReactDOM.render(
+  <Router>
+    <Route path="/" component={App}>
+      <IndexRoute component={Home} />
+      <Route path="/stuffs" component={Stuffs}>
+        <Route path=":stuffId" component={Stuff} />
+      </Route>
+      <Route path="faq" component={Faq} />
+      <Route path="*" component={NoMatch}/>
+    </Route>
+  </Router>,
+  destination
+);

@@ -225,6 +225,19 @@ func GetResetRelay(w http.ResponseWriter, r *http.Request) {
 
 }
 
+
+func GetRoot(w http.ResponseWriter, r *http.Request) {
+	//from request get datime and device name
+	//return urls of files to web interface
+	file, err := ioutil.ReadFile("front/html/index.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-type", "text/html")
+	w.Write(file)
+
+}
 func GetImg(w http.ResponseWriter, r *http.Request) {
 	//from request get datime and device name
 	//return urls of files to web interface

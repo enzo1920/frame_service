@@ -15,6 +15,11 @@ import (
 const hashCost = 8
 
 // AnotherHandlerLatest is the newest version of AnotherHandler
+//func AnotherHandlerLatest(w http.ResponseWriter, r *http.Request) {
+//	fmt.Fprintf(w, "hello from AnotherHandlerLatest.")
+//}
+
+// AnotherHandlerLatest is the newest version of AnotherHandler
 func AnotherHandlerLatest(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "hello from AnotherHandlerLatest.")
 }
@@ -37,7 +42,7 @@ func ExampleHandlerV2(w http.ResponseWriter, r *http.Request) {
 // AddV1Routes takes a router or subrouter and adds all the v1
 // routes to it
 func AddV1Routes(r *mux.Router) {
-	r.HandleFunc("/example", ExampleHandlerV1)
+	r.HandleFunc("/example1", ExampleHandlerV1)
 	AddRoutes(r)
 }
 
@@ -53,6 +58,7 @@ func AddV2Routes(r *mux.Router) {
 // AddRoutes takes a router or subrouter and adds all the latest
 // routes to it
 func AddRoutes(r *mux.Router) {
+
 	r.HandleFunc("/get/command/", models.GetCommands).Methods("GET")
 	r.HandleFunc("/get/cams/", models.GetCameraState).Methods("GET")
 	r.HandleFunc("/get/relay/reset/", models.GetResetRelay).Methods("GET")
@@ -88,13 +94,17 @@ func main() {
 	models.InitDB(readcfg)
 
 	router := mux.NewRouter()
+	//s := http.StripPrefix("/index/", http.FileServer(http.Dir("front/html")))
+
 	// latest
 	AddRoutes(router)
 	// v1
 	AddV1Routes(router.PathPrefix("/v1").Subrouter())
 	// v2
 	AddV2Routes(router.PathPrefix("/v2").Subrouter())
+	router.PathPrefix("/index/").Handler(http.StripPrefix("/index/", http.FileServer(http.Dir("front/html"))))
+	http.Handle("/", router)
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }

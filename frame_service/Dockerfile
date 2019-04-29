@@ -13,6 +13,7 @@ RUN mkdir -p /home/frame_service/uploaded
 RUN mkdir -p /home/frame_service/readconfig
 COPY ./uploaded/Arduino_Switch03.png /home/frame_service/uploaded/Arduino_Switch03.png
 COPY ./readconfig/frame_conf.conf /home/frame_service/readconfig/frame_conf.conf
+COPY ./front  /home/frame_service/front
 COPY frameservice /home/frame_service/
 WORKDIR /home/frame_service
 ENTRYPOINT ["/home/frame_service/frameservice"]
