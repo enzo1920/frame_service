@@ -23,7 +23,7 @@ var App = React.createClass({ displayName: "App",
       React.createElement("ul", { className: "header" },
       React.createElement("li", null, React.createElement(IndexLink, { to: "/", activeClassName: "active" }, "Начальная")),
       React.createElement("li", null, React.createElement(Link, { to: "/stuffs", activeClassName: "active" }, "Картинки")),
-      React.createElement("li", null, React.createElement(Link, { to: "/О нас", activeClassName: "active" }, "FAQ"))),
+      React.createElement("li", null, React.createElement(Link, { to: "/faq", activeClassName: "active" }, "FAQ"))),
 
       React.createElement("div", { className: "content" },
       this.props.children)));
@@ -39,14 +39,7 @@ var Home = React.createClass({ displayName: "Home",
       React.createElement("div", null,
       React.createElement("h2", null, "Здраствуй, друг!"),
       React.createElement("p", null, "Тестовый сайт"),
-
-
-
-
-
-
-      React.createElement("p", null, "Duis a turpis sed lacus dapibus elementum sed eu lectus."),
-
+      React.createElement("p", null, "Frame2"),
       React.createElement("p", null, "A wrong link: ", React.createElement(Link, { to: "ding" }, "Yes please"), ".")));
 
 
@@ -58,8 +51,7 @@ var Faq = React.createClass({ displayName: "Faq",
     return (
       React.createElement("div", null,
       React.createElement("h2", null, "Test"),
-	  React.createElement("img",{src: `/v1/get/img/`}),
-      React.createElement("p", null, "The easiest thing to check the ", React.createElement("a", { href: "https://github.com/ReactTraining/react-router" }, "docs"), ".")));
+	  React.createElement("img",{src: `/v1/get/img`})));
       
 
 

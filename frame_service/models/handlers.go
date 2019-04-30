@@ -225,28 +225,16 @@ func GetResetRelay(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
-func GetRoot(w http.ResponseWriter, r *http.Request) {
-	//from request get datime and device name
-	//return urls of files to web interface
-	file, err := ioutil.ReadFile("front/html/index.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-	w.Header().Set("Content-type", "text/html")
-	w.Write(file)
-
-}
 func GetImg(w http.ResponseWriter, r *http.Request) {
 	//from request get datime and device name
 	//return urls of files to web interface
-	file, err := ioutil.ReadFile("uploaded/Arduino_Switch03.png")
+	//fmt.Println("get img--->")
+	file, err := ioutil.ReadFile("uploaded/Cotier20.jpeg")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	w.Header().Set("Content-type", "image/png")
+	w.Header().Set("Content-type", "image/jpeg")
 	w.Write(file)
 
 }
