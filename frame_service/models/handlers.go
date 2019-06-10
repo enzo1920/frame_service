@@ -275,6 +275,7 @@ func UploadVoltageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UploadTempHandler(w http.ResponseWriter, r *http.Request) {
+
 	keys, ok := r.URL.Query()["token"]
 
 	if !ok || len(keys[0]) < 1 {

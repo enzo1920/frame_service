@@ -9,6 +9,8 @@ EthernetClient client;
 
 OneWire ds(7); // на пине 7 (нужен резистор 2.2 КОм)
 
+
+char server[] = "framecase.tula.su";
 // **** ETHERNET SETTING ****
 //byte mac[] = { 0x90, 0xA2, 0xDA, 0x0D, 0x78, 0xEE  };                                       
 IPAddress ip(10, 10, 10, 244); 
@@ -17,7 +19,9 @@ IPAddress mygw(10,10,10,1);
 IPAddress subnet(255,255,255,0);
 
 
-String str_temp;
+String PostData;
+String post = "POST /v1/upload/temp/?token=5d6f3ecb1cb3d69b HTTP/1.1";
+
 void setup() { 
 	Serial.begin(9600);
 
@@ -60,23 +64,27 @@ void loop(){
 
 void sendPOST() //client function to send/receive GET request data.
 {
-   str_temp =  DS18S20_read_temp();
-   Serial.println(str_temp);
+   PostData = "";
+   PostData =  DS18S20_read_temp();
+   Serial.println(PostData);
 
-   if(str_temp.length()>0){
+   if(PostData.length()>0){
 
-       if (client.connect("framecase.tula.su",8080)) { // REPLACE WITH YOUR SERVER ADDRESS
+       if (client.connect(server,8080)) {           
           Serial.println("connected");
           Serial.println("=================>");
-          client.println("POST /v1/upload/temp/?token={token} HTTP/1.1"); 
-          client.println("Host: {host}"); // SERVER ADDRESS HERE TOO
-          client.println("Content-Type: text/plain;");
-          client.print("Content-Length: "); 
-          client.println(str_temp.length()); 
-          client.println(); 
-          client.print(str_temp);
+          client.println(post);
+          client.println("Host:  framecase.tula.su");
+          client.println("User-Agent: Arduino/1.0");
+          client.println("Connection: close");
+          client.println("Content-Type: text/plain");
+          client.print("Content-Length: ");
+          client.println(PostData.length());
+          client.println();
+          client.println(PostData);
           Serial.println("disconnecting.");
           client.stop(); //stop client
+    
           
           } 
        else {

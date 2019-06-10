@@ -58,7 +58,6 @@ func AddV2Routes(r *mux.Router) {
 // AddRoutes takes a router or subrouter and adds all the latest
 // routes to it
 func AddRoutes(r *mux.Router) {
-
 	r.HandleFunc("/get/command/", models.GetCommands).Methods("GET")
 	r.HandleFunc("/get/cams/", models.GetCameraState).Methods("GET")
 	r.HandleFunc("/get/relay/reset/", models.GetResetRelay).Methods("GET")
