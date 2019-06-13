@@ -10,7 +10,7 @@ EthernetClient client;
 OneWire ds(7); // на пине 7 (нужен резистор 2.2 КОм)
 
 
-char server[] = "framecase.tula.su";
+char server[] = "cloud.framecase.ru";
 // **** ETHERNET SETTING ****
 //byte mac[] = { 0x90, 0xA2, 0xDA, 0x0D, 0x78, 0xEE  };                                       
 IPAddress ip(10, 10, 10, 244); 
@@ -20,7 +20,7 @@ IPAddress subnet(255,255,255,0);
 
 
 String PostData;
-String post = "POST /v1/upload/temp/?token=5d6f3ecb1cb3d69b HTTP/1.1";
+String post = "POST /v1/upload/temp/?token={token} HTTP/1.1";
 
 void setup() { 
 	Serial.begin(9600);
@@ -58,7 +58,7 @@ void loop(){
 		str_temp =  DS18S20_read_temp(); 
 	}*/
   sendPOST();
-  delay(7000); // WAIT   BEFORE SENDING AGAIN
+  delay(50000); // 50 sec WAIT   BEFORE SENDING AGAIN
 }
 
 
@@ -74,7 +74,7 @@ void sendPOST() //client function to send/receive GET request data.
           Serial.println("connected");
           Serial.println("=================>");
           client.println(post);
-          client.println("Host:  framecase.tula.su");
+          client.println("Host: cloud.framecase.ru");
           client.println("User-Agent: Arduino/1.0");
           client.println("Connection: close");
           client.println("Content-Type: text/plain");
@@ -92,12 +92,6 @@ void sendPOST() //client function to send/receive GET request data.
           Serial.println();
        }
         delay(100);
-
-        //Serial.println();
-       // Serial.println("disconnecting.");
-        //Serial.println(">================<");
-       // Serial.println();
-       // client.stop(); //stop client
    }
 
 }
@@ -172,10 +166,7 @@ String  DS18S20_read_temp(){
             //// разрешение по умолчанию равно 12 бит, время преобразования - 750 мс
       }
       celsius = (float)raw / 16.0;
-
-
       cels_str = String(celsius,2);
-      
       return cels_str;
 }
 

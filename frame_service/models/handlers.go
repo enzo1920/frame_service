@@ -49,6 +49,8 @@ type CmdsToExec struct {
 	Cmd_name string `json:"cmd_name"`
 }
 
+
+
 type Set_cmds struct {
 	Cmd_id     int `json:"cmd_id"`
 	Cmd_status int `json:"cmd_status"`
@@ -236,6 +238,52 @@ func GetImg(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-type", "image/jpeg")
 	w.Write(file)
+
+}
+
+//get current temperature from db
+func GetCurrentTemp(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("SELECT d.device_name, ts.temp, ts.date_temp  FROM temp_stat ts INNER JOIN devices d ON d.id=ts.dev_id ORDER BY ts.id limit 1")
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	//собираем 
+
+	for rows.Next() {
+		var device_name string
+		var temp string
+		var created time.Time
+		err = rows.Scan(&device_name, &temp, &created)
+		//checkErr(err)
+		fmt.Println(" device_name | temp | created ")
+		fmt.Printf("%8v | %6v | %6v\n", device_name, temp, created)
+	}
+
+    defer rows.Close()
+
+/*
+	sendcommans, err := json.Marshal(commands)
+	if err != nil {
+		//fmt.Println(err)
+		fmt.Println(err)
+	}
+	fmt.Println("sendcommands json:", string(sendcommans))
+	// If the database is being written to ensure to check for Close
+	// errors that may be returned from the driver. The query may
+	// encounter an auto-commit error and be forced to rollback changes.
+	rerr := rows.Close()
+	if rerr != nil {
+		log.Fatal(err)
+	}
+
+	// Rows.Err will report the last error encountered by Rows.Scan.
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(sendcommans)*/
 
 }
 
