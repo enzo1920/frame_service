@@ -8,7 +8,6 @@ import (
 	"log"
 	"mime"
 	"net"
-	"time"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -53,7 +52,7 @@ type CmdsToExec struct {
 type DevTemp struct {
 	Dev_name   string    `json:"dev_name"`
 	Dev_temp string `json:"dev_temp"`
-	Temp_date time.Time `json:"temp_date"`
+	Temp_date string `json:"temp_date"`
 }
 
 type Set_cmds struct {
@@ -248,24 +247,13 @@ func GetImg(w http.ResponseWriter, r *http.Request) {
 
 //get current temperature from db
 func GetCurrentTemp(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT d.device_name, ts.temp, ts.date_temp  FROM temp_stat ts INNER JOIN devices d ON d.id=ts.dev_id ORDER BY ts.id desc  limit 1")
+	var dt DevTemp
+	err := db.QueryRow("SELECT d.device_name, ts.temp, to_char(ts.date_temp, 'yyyy-mm-dd HH24:MI:SS')  FROM temp_stat ts INNER JOIN devices d ON d.id=ts.dev_id ORDER BY ts.id desc  limit 1").Scan(&dt.Dev_name, &dt.Dev_temp,&dt.Temp_date)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//собираем 
-	var devtemps []DevTemp
-	for rows.Next() {
-		var dt DevTemp
-		if err := rows.Scan(&dt.Dev_name, &dt.Dev_temp,&dt.Temp_date); err != nil {
-			// Check for a scan error.
-			// Query rows will be closed with defer.
-			log.Fatal(err)
-		}
-		//cmds = append(cmds, cmd)
-		devtemps = append(devtemps, dt)
-	}
-
-	senddevtemps, err := json.Marshal(devtemps)
+	
+	senddevtemps, err := json.Marshal(dt)
 	if err != nil {
 		//fmt.Println(err)
 		log.Println(err)
@@ -274,8 +262,6 @@ func GetCurrentTemp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(senddevtemps)
-
-    defer rows.Close()
 }
 
 func UploadVoltageHandler(w http.ResponseWriter, r *http.Request) {

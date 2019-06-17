@@ -19,7 +19,7 @@ var App = React.createClass({ displayName: "App",
   render: function () {
     return (
       React.createElement("div", null,
-      React.createElement("h1", null, "Добро пожаловать на сайт framecase.tula.su"),
+      React.createElement("h1", null, "framecase.ru"),
       React.createElement("ul", { className: "header" },
       React.createElement("li", null, React.createElement(IndexLink, { to: "/", activeClassName: "active" }, "Начальная")),
       React.createElement("li", null, React.createElement(Link, { to: "/stuffs", activeClassName: "active" }, "Картинки")),
