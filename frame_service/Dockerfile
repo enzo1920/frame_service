@@ -11,7 +11,7 @@ RUN mkdir -p /home/frame_service
 RUN mkdir -p /home/frame_service/log
 RUN mkdir -p /home/frame_service/uploaded
 RUN mkdir -p /home/frame_service/readconfig
-COPY ./uploaded/Cotier20.jpeg /home/frame_service/uploaded/Cotier20.jpeg
+#COPY ./uploaded/Cotier20.jpeg /home/frame_service/uploaded/Cotier20.jpeg
 COPY ./readconfig/frame_conf.conf /home/frame_service/readconfig/frame_conf.conf
 #COPY ./front  /home/frame_service/front
 COPY frameservice /home/frame_service/
