@@ -63,13 +63,14 @@ func AddRoutes(r *mux.Router) {
 	r.HandleFunc("/get/relay/reset/", models.GetResetRelay).Methods("GET")
 	r.HandleFunc("/get/img", models.GetImg).Methods("GET")
 	r.HandleFunc("/get/currenttemp", models.GetCurrentTemp).Methods("GET")
+	r.HandleFunc("/get/devdescr/", models.GetDevices).Methods("GET")
 	r.HandleFunc("/set/cams/", models.SetCamState).Methods("POST")
 	r.HandleFunc("/upload/image/", models.UploadHandler).Methods("POST")
 	r.HandleFunc("/upload/temp/", models.UploadTempHandler).Methods("POST")
 	r.HandleFunc("/upload/voltage/", models.UploadVoltageHandler).Methods("POST")
 	r.HandleFunc("/upload/volumeinfo/", models.DiskStateHandler).Methods("POST")
 	r.HandleFunc("/set/command/", models.SetCommandHandler).Methods("POST")
-	//r.HandleFunc("/ip", models.GetIP).Methods("GET")
+
 	//r.HandleFunc("/get-token", models.GetTokenHandler).Methods("GET")
 }
 
@@ -106,6 +107,6 @@ func main() {
 	//router.PathPrefix("/index/").Handler(http.StripPrefix("/index/", http.FileServer(http.Dir("front/html"))))
 	//http.Handle("/", router)
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":80", router))
 
 }

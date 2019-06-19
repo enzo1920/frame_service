@@ -54,6 +54,10 @@ type DevTemp struct {
 	Dev_temp string `json:"dev_temp"`
 	Temp_date string `json:"temp_date"`
 }
+type DevDescr struct {
+	Dev_name   string    `json:"dev_name"`
+	Dev_descr string `json:"dev_descr"`
+}
 
 type Set_cmds struct {
 	Cmd_id     int `json:"cmd_id"`
@@ -235,6 +239,10 @@ func GetImg(w http.ResponseWriter, r *http.Request) {
 	//from request get datime and device name
 	//return urls of files to web interface
 	//fmt.Println("get img--->")
+	//fmt.Println("GET params were:", r.URL.Query())
+	//devname := r.URL.Query().Get("dev_name")
+	//fmt.Println("GET devname were:", devname)
+
 	file, err := ioutil.ReadFile("uploaded/Cotier20.jpeg")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -244,6 +252,36 @@ func GetImg(w http.ResponseWriter, r *http.Request) {
 	w.Write(file)
 
 }
+//get devices with description only rasp
+func GetDevices(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("select device_name, dev_descr from devices d "+
+		" INNER join  devices_descr dcr on d.id=dcr.dev_id"+
+		" INNER join  dev_types dt on dt.id= d.dev_type  where device_status=true and dev_type=1")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+    var devicesdescr []DevDescr
+	for rows.Next() {
+		var dd DevDescr
+		if err := rows.Scan(&dd.Dev_name, &dd.Dev_descr); err != nil {
+
+			log.Fatal(err)
+		}
+		devicesdescr = append(devicesdescr, dd)
+	}
+
+	ddjson, err := json.Marshal(devicesdescr)
+	if err != nil {
+		log.Println(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(ddjson)
+
+}
+
 
 //get current temperature from db
 func GetCurrentTemp(w http.ResponseWriter, r *http.Request) {
