@@ -64,6 +64,7 @@ func AddRoutes(r *mux.Router) {
 	r.HandleFunc("/get/img", models.GetImg).Methods("GET")
 	r.HandleFunc("/get/currenttemp", models.GetCurrentTemp).Methods("GET")
 	r.HandleFunc("/get/devdescr/", models.GetDevices).Methods("GET")
+	r.HandleFunc("/get/devfolders/", models.GetDevFolders).Methods("GET")
 	r.HandleFunc("/set/cams/", models.SetCamState).Methods("POST")
 	r.HandleFunc("/upload/image/", models.UploadHandler).Methods("POST")
 	r.HandleFunc("/upload/temp/", models.UploadTempHandler).Methods("POST")

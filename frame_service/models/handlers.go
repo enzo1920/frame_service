@@ -258,7 +258,7 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 		" INNER join  devices_descr dcr on d.id=dcr.dev_id"+
 		" INNER join  dev_types dt on dt.id= d.dev_type  where device_status=true and dev_type=1")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	defer rows.Close()
 
@@ -267,7 +267,7 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 		var dd DevDescr
 		if err := rows.Scan(&dd.Dev_name, &dd.Dev_descr); err != nil {
 
-			log.Fatal(err)
+			log.Println(err)
 		}
 		devicesdescr = append(devicesdescr, dd)
 	}
@@ -281,6 +281,42 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 	w.Write(ddjson)
 
 }
+
+
+//get dev folders
+func GetDevFolders(w http.ResponseWriter, r *http.Request) {
+	devname := strings.ToUpper(r.URL.Query().Get("device"))
+	cntdev := 0
+	err := db.QueryRow("select count(*) from devices where dev_name=$1",devname).Scan(&cntdev)
+	if err != nil {
+		log.Println(err)
+	}
+
+    if cntdev == 0 {
+		log.Println("GET: no devices found in DB")
+	}
+
+    deviceDir, err := ioutil.ReadDir("uploaded/"+devname+"/")
+	if err != nil {
+		return
+	}
+	var fidnDirs []string
+	for _, dir := range deviceDir {
+		if dir.IsDir() {
+			fidnDirs = append(fidnDirs, dir.Name())
+		}
+
+	}
+	foldersjson, err := json.Marshal(fidnDirs)
+	if err != nil {
+		log.Println(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(foldersjson)
+}
+
+
 
 
 //get current temperature from db
