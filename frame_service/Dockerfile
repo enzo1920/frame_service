@@ -4,7 +4,7 @@ RUN apt-get update
 RUN apt-get install mc -y
 #RUN apt-get install net-tools -y
 
-EXPOSE 8080:8080
+EXPOSE 80:80
 
 
 RUN mkdir -p /home/frame_service
