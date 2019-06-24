@@ -375,6 +375,7 @@ func UploadVoltageHandler(w http.ResponseWriter, r *http.Request) {
 
 func UploadTempHandler(w http.ResponseWriter, r *http.Request) {
 
+	//fmt.Println("upload temp query:",r.URL.Query())
 	keys, ok := r.URL.Query()["token"]
 
 	if !ok || len(keys[0]) < 1 {
@@ -394,10 +395,11 @@ func UploadTempHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("dev_id upload temp:", device_id)
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 
 	}
 	bodyString := string(body)
+	//fmt.Printf("temp is:%s, token is %s\n", bodyString, token)
 	log.Printf("temp is:%s, token is %s\n", bodyString, token)
 	rows, err := db.Query("insert into  temp_stat values (DEFAULT,$1,$2, CURRENT_TIMESTAMP)", &device_id, &bodyString)
 	if err != nil {

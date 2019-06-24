@@ -19,18 +19,18 @@ IPAddress mygw(10,10,10,1);
 IPAddress subnet(255,255,255,0);
 
 
-String PostData;
+String PostData = "";
 String post = "POST /v1/upload/temp/?token={token} HTTP/1.1";
 
 void setup() { 
-	Serial.begin(9600);
+  Serial.begin(9600);
 
 
-	if (!Ethernet.begin(mac) ) {
-		Serial.println("Failed to configure Ethernet using DHCP"); 
+  if (!Ethernet.begin(mac) ) {
+    Serial.println("Failed to configure Ethernet using DHCP"); 
     Ethernet.begin(mac, ip,mydns,mygw,subnet);
    
-	}
+  }
   //Ethernet.begin(mac, ip);
   Serial.print("ip-");
   Serial.println( Ethernet.localIP());
@@ -40,25 +40,25 @@ void setup() {
   Serial.println( Ethernet.gatewayIP());
   Serial.print("DNS-");
   Serial.println( Ethernet.dnsServerIP());
-	
-	//delay(1000); // GIVE THE SENSOR SOME TIME TO START
+  
+  //delay(1000); // GIVE THE SENSOR SOME TIME TO START
 
  
-	//str_temp =  DS18S20_read_temp(); 
+  //str_temp =  DS18S20_read_temp(); 
   //Serial.println(str_temp);
 
-	//data = "";
+  //data = "";
 }
 
 void loop(){
 
-	/*currentMillis = millis();
-	if(currentMillis - previousMillis > interval) { // READ ONLY ONCE PER INTERVAL
-		previousMillis = currentMillis;
-		str_temp =  DS18S20_read_temp(); 
-	}*/
+  /*currentMillis = millis();
+  if(currentMillis - previousMillis > interval) { // READ ONLY ONCE PER INTERVAL
+    previousMillis = currentMillis;
+    str_temp =  DS18S20_read_temp(); 
+  }*/
   sendPOST();
-  delay(50000); // 50 sec WAIT   BEFORE SENDING AGAIN
+  delay(20000); // 50 sec WAIT   BEFORE SENDING AGAIN
 }
 
 
@@ -70,28 +70,28 @@ void sendPOST() //client function to send/receive GET request data.
 
    if(PostData.length()>0){
 
-       if (client.connect(server,8080)) {           
-          Serial.println("connected");
-          Serial.println("=================>");
+       if (client.connect(server,80)) {           
+          //Serial.println("connected");
+          //Serial.println("=================>");
           client.println(post);
           client.println("Host: cloud.framecase.ru");
           client.println("User-Agent: Arduino/1.0");
-          client.println("Connection: close");
+          //client.println("Connection: close");
           client.println("Content-Type: text/plain");
           client.print("Content-Length: ");
           client.println(PostData.length());
           client.println();
           client.println(PostData);
-          Serial.println("disconnecting.");
+          //Serial.println("disconnecting.");
           client.stop(); //stop client
     
           
           } 
        else {
-          Serial.println("connection failed or temp is not enough"); //error message if no client connect
+          Serial.println("connection failed"); //error message if no client connect
           Serial.println();
        }
-        delay(100);
+        //delay(100);
    }
 
 }
@@ -136,14 +136,12 @@ String  DS18S20_read_temp(){
     ds.reset();
     ds.select(addr);
     ds.write(0x44); // начинаем преобразование, используя ds.write(0x44,1) с "паразитным" питанием
-    delay(1000); // 750 может быть достаточно, а может быть и не хватит
+    delay(2000); // 750 может быть достаточно, а может быть и не хватит
     // мы могли бы использовать тут ds.depower(), но reset позаботится об этом
     present = ds.reset();
     ds.select(addr);
     ds.write(0xBE);
-    //Serial.print(" Data = ");
-    //Serial.print(present, HEX);
-    //Serial.print(" ");
+
     for ( i = 0; i < 9; i++) { // нам необходимо 9 байт
           data[i] = ds.read();
           //Serial.print(data[i], HEX);
