@@ -317,6 +317,69 @@ func GetDevFolders(w http.ResponseWriter, r *http.Request) {
 }
 
 
+// получаем json список картинок в папке
+func GetImgFromFolders(w http.ResponseWriter, r *http.Request) {
+	devname := strings.ToUpper(r.URL.Query().Get("device"))
+	folder := strings.ToUpper(r.URL.Query().Get("folder"))
+	cntdev := 0
+	err := db.QueryRow("select count(*) from devices where dev_name=$1",devname).Scan(&cntdev)
+	if err != nil {
+		log.Println(err)
+	}
+
+    if cntdev == 0 {
+		log.Println("GET: no devices found in DB")
+	}
+
+	var filesindir []string
+	d, err := os.Open("uploaded/"+devname+"/"+folder+"/")
+	if err != nil {
+		log.Println("error open dir in GetImgFromFolders",err)
+	}
+	defer d.Close()
+
+	files, err := d.Readdir(-1)
+	if err != nil {
+		log.Println("error read dir in GetImgFromFolders",err)
+	}
+
+	fmt.Println("Reading " +"uploaded/"+devname+"/"+folder+"/")
+
+	for _, file := range files {
+		if file.Mode().IsRegular() {
+			if filepath.Ext(file.Name()) == ".jpeg" {
+				filesindir = append(filesindir, file.Name())
+			}
+		}
+	}
+
+	
+	filesjson, err := json.Marshal(filesindir)
+	if err != nil {
+		log.Println(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(filesjson)
+}
+
+
+func GetImgByName(w http.ResponseWriter, r *http.Request) {
+	devname := r.URL.Query().Get("device")
+	folder := r.URL.Query().Get("folder")
+	picture := r.URL.Query().Get("picture")
+	//fmt.Println("need to open:","uploaded/"+devname+"/"+folder+"/"+picture)
+
+	file, err := ioutil.ReadFile("uploaded/"+devname+"/"+folder+"/"+picture)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-type", "image/jpeg")
+	w.Write(file)
+
+}
+
 
 
 //get current temperature from db

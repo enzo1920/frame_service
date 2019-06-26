@@ -19,8 +19,8 @@ IPAddress mygw(10,10,10,1);
 IPAddress subnet(255,255,255,0);
 
 
-String PostData = "";
-String post = "POST /v1/upload/temp/?token={token} HTTP/1.1";
+//String PostData = "";
+char  post[] = "POST /v1/upload/temp/?token=5d6f3ecb1cb3d69b HTTP/1.1";
 
 void setup() { 
   Serial.begin(9600);
@@ -64,9 +64,9 @@ void loop(){
 
 void sendPOST() //client function to send/receive GET request data.
 {
-   PostData = "";
-   PostData =  DS18S20_read_temp();
-   Serial.println(PostData);
+   //PostData = "";
+   String PostData=  DS18S20_read_temp();
+   //Serial.println(PostData);
 
    if(PostData.length()>0){
 
@@ -87,22 +87,22 @@ void sendPOST() //client function to send/receive GET request data.
     
           
           } 
-       else {
-          Serial.println("connection failed"); //error message if no client connect
-          Serial.println();
-       }
+       //else {
+        //  Serial.println("connection failed"); //error message if no client connect
+          //Serial.println();
+      // }
         //delay(100);
    }
 
 }
 
-String  DS18S20_read_temp(){
+char*  DS18S20_read_temp(){
    byte i;
    byte present = 0;
    byte type_s;
    byte data[12];
    byte addr[8];
-   String cels_str;
+   char result[8];
    float celsius, fahrenheit;
    if (!ds.search(addr)) {
          //Serial.println("No more addresses.");
@@ -164,8 +164,9 @@ String  DS18S20_read_temp(){
             //// разрешение по умолчанию равно 12 бит, время преобразования - 750 мс
       }
       celsius = (float)raw / 16.0;
-      cels_str = String(celsius,2);
-      return cels_str;
+      dtostrf(celsius, 6, 2, result);
+      //cels_str = String(celsius,2);
+      return result;
 }
 
 
