@@ -1,4 +1,4 @@
-#include <ArduinoJson.h>
+//#include <ArduinoJson.h>
 #include <UIPEthernet.h> // Used for Ethernet
 #include <OneWire.h>
 #include <SPI.h>
@@ -40,103 +40,80 @@ void setup() {
   Serial.println( Ethernet.gatewayIP());
   Serial.print("DNS-");
   Serial.println( Ethernet.dnsServerIP());
-  
-  //delay(1000); // GIVE THE SENSOR SOME TIME TO START
 
- 
-  //str_temp =  DS18S20_read_temp(); 
-  //Serial.println(str_temp);
-
-  //data = "";
 }
 
 void loop(){
-
-  /*currentMillis = millis();
-  if(currentMillis - previousMillis > interval) { // READ ONLY ONCE PER INTERVAL
-    previousMillis = currentMillis;
-    str_temp =  DS18S20_read_temp(); 
-  }*/
+  delay(5000); // 50 sec WAIT   BEFORE SENDING AGAIN
+  Serial.println("send post to cloud.framecase.ru "); 
   sendPOST();
-  delay(20000); // 50 sec WAIT   BEFORE SENDING AGAIN
+
 }
 
 
 void sendPOST() //client function to send/receive GET request data.
 {
-   //PostData = "";
-   String PostData=  DS18S20_read_temp();
-   //Serial.println(PostData);
-
-   if(PostData.length()>0){
-
-       if (client.connect(server,80)) {           
-          //Serial.println("connected");
-          //Serial.println("=================>");
+   char PostData[8];  
+   DS18S20_read_temp(PostData);
+   Serial.println("read temp "); 
+   Serial.println(PostData);
+   if (client.connect(server,80)) { 
+       if(sizeof(PostData)>0){
+          Serial.println("connect to  cloud.framecase.ru"); 
           client.println(post);
           client.println("Host: cloud.framecase.ru");
           client.println("User-Agent: Arduino/1.0");
           //client.println("Connection: close");
           client.println("Content-Type: text/plain");
           client.print("Content-Length: ");
-          client.println(PostData.length());
+          client.println(sizeof(PostData));
           client.println();
           client.println(PostData);
-          //Serial.println("disconnecting.");
+     
           client.stop(); //stop client
-    
-          
           } 
-       //else {
-        //  Serial.println("connection failed"); //error message if no client connect
-          //Serial.println();
-      // }
-        //delay(100);
+          else{
+            client.println(post);
+            client.println("Host: cloud.framecase.ru");
+            client.println("User-Agent: Arduino/1.0");
+            //client.println("Connection: close");
+            client.println("Content-Type: text/plain");
+            client.print("Content-Length: ");
+            client.println(4);
+            client.println();
+            client.println("-273");
+            client.stop(); //stop client
+            
+            }
    }
 
 }
 
-char*  DS18S20_read_temp(){
+char*  DS18S20_read_temp(char * result){
    byte i;
    byte present = 0;
-   byte type_s;
+   byte type_s = 0;
+   //byte type_s;
    byte data[12];
    byte addr[8];
-   char result[8];
-   float celsius, fahrenheit;
+   //char result[8];
+   //float celsius, fahrenheit;
    if (!ds.search(addr)) {
-         //Serial.println("No more addresses.");
+
          ds.reset_search();
          delay(250);
          return;
     }
 
    if (OneWire::crc8(addr, 7) != addr[7]) {
-        //Serial.println("CRC is not valid!");
+
         return;
    }
-   // первый байт определяет чип
-   switch (addr[0]) {
-          case 0x10:
-                   //Serial.println("Chip = DS18S20"); // или более старый DS1820
-                   type_s = 1;
-                   break;
-          case 0x28:
-                   //Serial.println("Chip = DS18B20");
-                   type_s = 0;
-                   break;
-          case 0x22:
-                   //Serial.println("Chip = DS1822");
-                   type_s = 0;
-                   break;
-          default:
-                   //Serial.println("Device is not a DS18x20 family device.");
-                   return;
-          }
+
     ds.reset();
     ds.select(addr);
     ds.write(0x44); // начинаем преобразование, используя ds.write(0x44,1) с "паразитным" питанием
-    delay(2000); // 750 может быть достаточно, а может быть и не хватит
+    delay(750); // 750 может быть достаточно, а может быть и не хватит
     // мы могли бы использовать тут ds.depower(), но reset позаботится об этом
     present = ds.reset();
     ds.select(addr);
@@ -144,8 +121,6 @@ char*  DS18S20_read_temp(){
 
     for ( i = 0; i < 9; i++) { // нам необходимо 9 байт
           data[i] = ds.read();
-          //Serial.print(data[i], HEX);
-          //Serial.print(" ");
         }
     
     int16_t raw = (data[1] << 8) | data[0];
@@ -163,9 +138,8 @@ char*  DS18S20_read_temp(){
             else if (cfg == 0x40) raw = raw & ~1; // разрешение 11 бит, 375 мс
             //// разрешение по умолчанию равно 12 бит, время преобразования - 750 мс
       }
-      celsius = (float)raw / 16.0;
-      dtostrf(celsius, 6, 2, result);
-      //cels_str = String(celsius,2);
+      //celsius = (float)raw / 16.0;
+      dtostrf((float)raw / 16.0, 6, 2, result);
       return result;
 }
 
