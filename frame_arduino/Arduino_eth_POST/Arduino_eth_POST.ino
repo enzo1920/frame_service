@@ -9,21 +9,22 @@ EthernetClient client;
 
 OneWire ds(7); // на пине 7 (нужен резистор 2.2 КОм)
 
-
+char  post[] = "POST /v1/upload/temp/?token=5d6f3ecb1cb3d69b HTTP/1.1";
 char server[] = "cloud.framecase.ru";
-// **** ETHERNET SETTING ****
-//byte mac[] = { 0x90, 0xA2, 0xDA, 0x0D, 0x78, 0xEE  };                                       
+// **** ETHERNET SETTING ****                                     
 IPAddress ip(10, 10, 10, 244); 
 IPAddress mydns(10,10,10,1);
 IPAddress mygw(10,10,10,1);
 IPAddress subnet(255,255,255,0);
 
 
-//String PostData = "";
-char  post[] = "POST /v1/upload/temp/?token=5d6f3ecb1cb3d69b HTTP/1.1";
+
+
 
 void setup() { 
   Serial.begin(9600);
+  Serial.println("\n[memCheck]");
+  Serial.println(freeRam());
 
 
   if (!Ethernet.begin(mac) ) {
@@ -44,47 +45,33 @@ void setup() {
 }
 
 void loop(){
-  delay(5000); // 50 sec WAIT   BEFORE SENDING AGAIN
+  delay(50000); // 50 sec WAIT   BEFORE SENDING AGAIN
   Serial.println("send post to cloud.framecase.ru "); 
   sendPOST();
+  Serial.println("\n[memCheck2:]");
+  Serial.println(freeRam());
 
 }
 
 
 void sendPOST() //client function to send/receive GET request data.
 {
+
    char PostData[8];  
    DS18S20_read_temp(PostData);
-   Serial.println("read temp "); 
    Serial.println(PostData);
    if (client.connect(server,80)) { 
        if(sizeof(PostData)>0){
-          Serial.println("connect to  cloud.framecase.ru"); 
           client.println(post);
           client.println("Host: cloud.framecase.ru");
           client.println("User-Agent: Arduino/1.0");
-          //client.println("Connection: close");
           client.println("Content-Type: text/plain");
           client.print("Content-Length: ");
           client.println(sizeof(PostData));
           client.println();
           client.println(PostData);
-     
           client.stop(); //stop client
           } 
-          else{
-            client.println(post);
-            client.println("Host: cloud.framecase.ru");
-            client.println("User-Agent: Arduino/1.0");
-            //client.println("Connection: close");
-            client.println("Content-Type: text/plain");
-            client.print("Content-Length: ");
-            client.println(4);
-            client.println();
-            client.println("-273");
-            client.stop(); //stop client
-            
-            }
    }
 
 }
@@ -113,8 +100,8 @@ char*  DS18S20_read_temp(char * result){
     ds.reset();
     ds.select(addr);
     ds.write(0x44); // начинаем преобразование, используя ds.write(0x44,1) с "паразитным" питанием
-    delay(750); // 750 может быть достаточно, а может быть и не хватит
-    // мы могли бы использовать тут ds.depower(), но reset позаботится об этом
+    delay(750); // 750 
+
     present = ds.reset();
     ds.select(addr);
     ds.write(0xBE);
@@ -132,15 +119,20 @@ char*  DS18S20_read_temp(char * result){
      } 
      else {
             byte cfg = (data[4] & 0x60);
-            // при маленьких значениях, малые биты не определены, давайте их обнулим
             if (cfg == 0x00) raw = raw & ~7; // разрешение 9 бит, 93.75 мс
             else if (cfg == 0x20) raw = raw & ~3; // разрешение 10 бит, 187.5 мс
             else if (cfg == 0x40) raw = raw & ~1; // разрешение 11 бит, 375 мс
-            //// разрешение по умолчанию равно 12 бит, время преобразования - 750 мс
+          
       }
       //celsius = (float)raw / 16.0;
       dtostrf((float)raw / 16.0, 6, 2, result);
       return result;
+}
+
+int freeRam () {
+  extern int __heap_start, *__brkval; 
+  int v; 
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
 }
 
 
