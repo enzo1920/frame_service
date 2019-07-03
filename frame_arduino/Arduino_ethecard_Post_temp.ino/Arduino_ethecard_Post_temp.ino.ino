@@ -1,132 +1,155 @@
-// Using as client mode to send data to your website.
-
-// Simple demo for feeding some random data to Pachube.
-// 2011-07-08 <jc@wippler.nl> http://opensource.org/licenses/mit-license.php
-
-// Handle returning code and reset ethernet module if needed
-// 2013-10-22 hneiraf@gmail.com
-
-// Modifing so that it works on my setup for www.thingspeak.com.
-// Arduino pro-mini 5V/16MHz, ETH modul on SPI with CS on pin 10.
-// Also added a few changes found on various forums. Do not know what the 
-// res variable is for, tweaked it so it works faster for my application
-// 2015-11-09 dani.lomajhenic@gmail.com
+// Twitter client sketch for ENC28J60 based Ethernet Shield. Uses 
+// arduino-tweet.appspot.com as a OAuth gateway.
+// Step by step instructions:
+// 
+//  1. Get a oauth token:
+//     http://arduino-tweet.appspot.com/oauth/twitter/login
+//  2. Put the token value in the TOKEN define below
+//  3. Run the sketch!
+//
+//  WARNING: Don't send more than 1 tweet per minute!
+//  WARNING: This example uses insecure HTTP and not HTTPS.
+//  The API key will be sent over the wire in plain text.
+//  NOTE: Twitter rejects tweets with identical content as dupes (returns 403)
 
 #include <EtherCard.h>
+#include <OneWire.h>
+#include <SPI.h>
 
-// change these settings to match your own setup
-//#define FEED "000"
-#define APIKEY "beef1337beef1337" // put your key here
-#define ethCSpin 10 // put your CS/SS pin here.
+// OAUTH key from http://arduino-tweet.appspot.com/
+
 
 // ethernet interface mac address, must be unique on the LAN
-static byte mymac[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
-const char website[] PROGMEM = "moty22.co.uk";  //Change to your domain name 
-byte Ethernet::buffer[700];
-uint32_t timer;
-Stash stash;
-byte session;
-String d1;
-//timing variable
-int res = 100; // was 0
-int analog=0;
+byte mymac[] = { 0x00, 0xAA, 0xBB, 0xCC, 0xDE, 0x01 };
+OneWire ds(7); // на пине 7 (нужен резистор 2.2 КОм)
 
+const char website[] PROGMEM = "cloud.framecase.ru";
+
+static byte session;
+
+byte Ethernet::buffer[700];
+static uint32_t timer;
+ 
+
+Stash stash;
+
+static void sendToFramecase () {
+  Serial.println("Sending temp...");
+  byte sd = stash.create();
+  
+  char PostData[8]; 
+  DS18S20_read_temp(PostData);
+  Serial.println(PostData);
+  stash.println(PostData);
+  stash.save();
+  int stash_size = stash.size();
+
+  // Compose the http POST request, taking the headers below and appending
+  // previously created stash in the sd holder.
+  Stash::prepare(PSTR("POST http://$F/v1/upload/temp/?token=5d6f3ecb1cb3d69b HTTP/1.0" "\r\n"
+    "Host: $F" "\r\n"
+    "Content-Length: $D" "\r\n"
+    "\r\n"
+    "$H"),
+  website, website, stash_size, sd);
+
+  // send the packet - this also releases all stash buffers once done
+  // Save the session ID so we can watch for it in the main loop.
+  session = ether.tcpSend();
+  PostData[0] = (char)0;//characters are terminated by a zero byte, only the first byte needs to be zeroed
+}
 
 void setup () {
-  pinMode(3,INPUT_PULLUP);
-  Serial.begin(9600);
-  Serial.println("\n[ThingSpeak example]");
+  Serial.begin(57600);
+  Serial.println("\n[Framecase Client]");
 
-  //Initialize Ethernet
-  initialize_ethernet();
+  if (ether.begin(sizeof Ethernet::buffer, mymac) == 0) 
+    Serial.println(F("Failed to access Ethernet controller"));
+  if (!ether.dhcpSetup())
+    Serial.println(F("DHCP failed"));
+
+  ether.printIp("IP:  ", ether.myip);
+  ether.printIp("GW:  ", ether.gwip);  
+  ether.printIp("DNS: ", ether.dnsip);  
+
+  if (!ether.dnsLookup(website))
+    Serial.println(F("DNS failed"));
+
+  ether.printIp("SRV: ", ether.hisip);
+
+ 
 }
 
+void DS18S20_read_temp(char * result){
+   byte i;
+   byte present = 0;
+   byte type_s = 0;
+   //byte type_s;
+   byte data[12];
+   byte addr[8];
+   //char result[8];
+   //float celsius, fahrenheit;
+   if (!ds.search(addr)) {
 
-void loop () { 
-  //if correct answer is not received then re-initialize ethernet module
-  if (res > 220){
-    initialize_ethernet(); 
-  }
-  
-  res = res + 1;
-  
-  ether.packetLoop(ether.packetReceive());
-  
-  //200 res = 30 seconds (150ms each res)
-  if (res == 200) {
+         ds.reset_search();
+         delay(250);
+         return;
+    }
 
-    analog = analogRead(A0);
-    if(digitalRead(3)) {d1 = "OFF";} else {d1 = "ON";}  
+   if (OneWire::crc8(addr, 7) != addr[7]) {
 
-    // generate 3 values as payload - by using a separate stash,
-    // we can determine the size of the generated message ahead of time
-    
-    byte sd = stash.create();
-
-    stash.print("field1=");
-    stash.print(highByte(analog));
-    stash.print("&field2=");
-    stash.print(lowByte(analog));
-    stash.print("&field3=");
-    stash.print(d1);
-    
-    stash.save();
-
-    // generate the header with payload - note that the stash size is used,
-    // and that a "stash descriptor" is passed in as argument using "$H"
-    Stash::prepare(PSTR("POST /a11.php HTTP/1.1" "\r\n"
-      "Host: $F" "\r\n"
-      "Connection: close" "\r\n"
-      "X-THINGSPEAKAPIKEY: $F" "\r\n"
-      "Content-Type: application/x-www-form-urlencoded" "\r\n"
-      "Content-Length: $D" "\r\n"
-      "\r\n"
-      "$H"),
-      website, PSTR(APIKEY), stash.size(), sd);
-
-    // send the packet - this also releases all stash buffers once done
-    session = ether.tcpSend(); 
-
- // added from: http://jeelabs.net/boards/7/topics/2241
-// int freeCount = stash.freeCount();
-//    if (freeCount <= 3) {   Stash::initMap(56); } 
-  }
-  
-   const char* reply = ether.tcpReply(session);
-   
-   if (reply != 0) {
-     res = 0;
-     Serial.println(F(" >>>REPLY recieved...."));
-     Serial.println(reply);
-     delay(300);
+        return;
    }
-   delay(150);
+
+    ds.reset();
+    ds.select(addr);
+    ds.write(0x44); // начинаем преобразование, используя ds.write(0x44,1) с "паразитным" питанием
+    delay(750); // 750 
+
+    present = ds.reset();
+    ds.select(addr);
+    ds.write(0xBE);
+
+    for ( i = 0; i < 9; i++) { // нам необходимо 9 байт
+          data[i] = ds.read();
+        }
+    
+    int16_t raw = (data[1] << 8) | data[0];
+    if (type_s) {
+            raw = raw << 3; // разрешение 9 бит по умолчанию
+            if (data[7] == 0x10) {
+                  raw = (raw & 0xFFF0) + 12 - data[6];
+            }
+     } 
+     else {
+            byte cfg = (data[4] & 0x60);
+            if (cfg == 0x00) raw = raw & ~7; // разрешение 9 бит, 93.75 мс
+            else if (cfg == 0x20) raw = raw & ~3; // разрешение 10 бит, 187.5 мс
+            else if (cfg == 0x40) raw = raw & ~1; // разрешение 11 бит, 375 мс
+          
+      }
+      //celsius = (float)raw / 16.0;
+      dtostrf((float)raw / 16.0, 6, 2, result);
+      //return result;
 }
 
-void initialize_ethernet(void){  
-  for(;;){ // keep trying until you succeed 
 
-    if (ether.begin(sizeof Ethernet::buffer, mymac, ethCSpin) == 0){ 
-      Serial.println( "Failed to access Ethernet controller");
-      continue;
-    }
-    
-    if (!ether.dhcpSetup()){
-      Serial.println("DHCP failed");
-      continue;
-    }
 
-    ether.printIp("IP:  ", ether.myip);
-    ether.printIp("GW:  ", ether.gwip);  
-    ether.printIp("DNS: ", ether.dnsip);  
 
-    if (!ether.dnsLookup(website))
-      Serial.println("DNS failed");
 
-    ether.printIp("SRV: ", ether.hisip);
+void loop () {
+  if (millis() > timer) {
+    timer = millis() + 50000;
+    sendToFramecase();
+    Serial.println("send post to cloud.framecase.ru ");
+  }
 
-    //reset init value
-    res = 180;
-    break;
+  ether.packetLoop(ether.packetReceive());
+
+  const char* reply = ether.tcpReply(session);
+  if (reply != 0) {
+    Serial.println("Got a response!");
+    Serial.println(reply);
   }
 }
+
